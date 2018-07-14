@@ -63,7 +63,7 @@ The above command calls the colibri virtual machine with `nameofproject.cex` as 
 
 # Keywords
 The first step of compilation named "Lexical Analysis" and splits the input file to tokens.
-In this phase, the compiler recognizes the reserved keywords.
+In this phase, the compiler recognizes the reserved keywords which are:
 
 
 ```
@@ -73,6 +73,13 @@ println  times   use     unless     not
 and      or      real    puts       bool
 func     class   pub     abstract   var
 ```
+# Syntax
+Let's see some commands.
+In nectar you can declare functions, classes and variables.
+The execution of nectar program starts from the main function.
+
+* **Class Declaration**:
+
 ```swift
 pub class Person{
 
@@ -83,7 +90,7 @@ pub class Person{
       self.name = name
       self.age = age
       
-      return ok
+      return 0
   }
   
 }
@@ -92,6 +99,22 @@ func main()->int {
   var alice:Person = Person.new("alice",18)
   15 times say "hello world!"
   
-  return ok
+  return 0
 }
 ```
+* **Fields**:
+```ruby
+@age:int
+```
+With the above way you can declare a field in class. Fields are strictly private.
+
+* **Methods**:
+```rust
+  pub new(string name,int age) -> int {
+      self.name = name
+      self.age = age
+      
+      return 0
+  }
+```
+Methods are by default private. You can make them public by adding the keyword `pub` to the beginning of declaration.
