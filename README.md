@@ -174,7 +174,7 @@ You can declare & define a variable in methods and functions.
 Prints out the message "hello world" and new line.
 
 * **Print without line**:
-```swift
+```python
    print "hello world!"
 ```
 Prints out the message "hello world".
