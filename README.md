@@ -50,11 +50,29 @@ func main()->int {
 }
 ```
 # Build your project
-After we created the project let's see how to build it. Writing the below command you can build your poject:
+After project creation let's see how to build it. Writing the below command you can build your project:
 > nectar build nameofproject
 
 The above command initially calls the prenectar program to unite all the nectar files of your project and saves the result in the `final.nrf` file. After this, the nectar compiler is called, which it produces the bytecode in `nameofproject.cex`. The `nameofproject.cex` is stored in `exec` folder.
 
+# Run your project
+After project build let's see how to run it. Writing the below command you can run your project:
+> nectar run nameofproject
+
+The above command calls the colibri virtual machine with `nameofproject.cex` as input. Colibri-VM executes the bytecode.
+
+# Keywords
+The first step of compilation named "Lexical Analysis" and splits the input file to tokens.
+In this phase, the compiler recognizes the reserved keywords.
+
+
+```
+false    true    int     return     if 
+else     while   break   print      read
+println  times   use     unless     not
+and      or      real    puts       bool
+func     class   pub     abstract   var
+```
 ```swift
 pub class Person{
 
