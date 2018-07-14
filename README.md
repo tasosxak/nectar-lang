@@ -1,4 +1,6 @@
-# nectar
+<p align="center">
+  <img src="https://github.com/tasosxak/nectar-lang/blob/master/nectar.jpg/?style=centerme">
+</p>
 
 Nectar is a new general-purposed programming language. It comprises a combination of both high-level and low-level language features. Nectar supports object-orentied and procedural programming.
 
