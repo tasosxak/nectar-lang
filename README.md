@@ -79,7 +79,11 @@ func     class   pub     abstract   var
 Let's see some commands.
 In nectar you can declare functions, classes and variables.
 The execution of nectar program starts from the main function which is one and only one.
-
+* **Import libraries**:
+```rust
+use math
+```
+With this command you can import other nectar files. You should write use statements at the top of your program.
 * **Class Declaration**:
 
 ```swift
