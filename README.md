@@ -130,7 +130,7 @@ func main()->int {
   return 0
 }
 ```
-With the above way you can declare a function in your program.Instead method declaration, the declaration of function starts with the keyword `func`.
+With the above way you can declare a function in your program.Instead of method declaration, the declaration of function starts with the keyword `func`.
 
 * **Variable Declaration**:
 ```javascript
