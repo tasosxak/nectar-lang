@@ -47,7 +47,7 @@ If you open the `nameofproject.nr` file in `src` folder you will see the below s
 
 ```swift
 func main()->int {
-  say "Hello world!"
+  println "Hello world!"
   return 0
 }
 ```
@@ -99,7 +99,7 @@ pub class Person{
 
 func main()->int {
   var alice:Person = Person.new("alice",18)
-  15 times say "hello world!"
+  15 times println "hello world!"
   
   return 0
 }
@@ -125,7 +125,7 @@ Methods are by default private. You can make them public by adding the keyword `
 ```swift
 func main()->int {
   var alice:Person = Person.new("alice",18)
-  15 times say "hello world!"
+  15 times println "hello world!"
   
   return 0
 }
@@ -190,7 +190,7 @@ Prints out the message "hello world".
    read "Give me a number: ",x
 ```
 Prints out the message "Give me a number" and waits for input. When the user gives an input and press the enter button,this
-command assigns the input to the variable `x`. The command must be assignment, print,read, expression.
+command assigns the input to the variable `x`. 
 
 * **if statement**:
 ```swift
@@ -199,7 +199,7 @@ command assigns the input to the variable `x`. The command must be assignment, p
    }
 ```
 * **if statement with else**:
-```swift
+```ruby
    if( age < 18 ) {
       puts "you are kid!"
    }
@@ -222,6 +222,7 @@ command assigns the input to the variable `x`. The command must be assignment, p
 
 # Single Statements
 Single Statements are statements which you can write in one line, fastly.
+The command must be assignment, print,read, expression.
 
 * **command if expression**:
 ```python
