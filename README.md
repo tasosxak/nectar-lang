@@ -177,9 +177,59 @@ Prints out the message "hello world" and new line.
 ```
 Prints out the message "hello world".
 
+* **Puts**:
+```swift
+   puts "hello world!"
+```
+Prints out the message "hello world".
+
 * **Read**:
 ```swift
    read "Give me a number: ",x
 ```
 Prints out the message "Give me a number" and waits for input. When the user gives an input and press the enter button,this
-command assigns the input to the variable `x`.
+command assigns the input to the variable `x`. The command must be assignment, print,read, expression.
+
+* **if statement**:
+```swift
+   if( age < 18 ) {
+      puts "you are kid!"
+   }
+```
+* **if statement with else**:
+```swift
+   if( age < 18 ) {
+      puts "you are kid!"
+   }
+   else {
+      puts "you are man!"
+   }
+```
+* **While loop**:
+```swift
+   while(counter < 15){
+    read "Give me a number", x
+    println x
+    counter++
+   }
+```
+* **Times loop**:
+```swift
+   15 times puts "Hello world"
+```
+
+# Single Statements
+Single Statements are statements which you can write in one line, fastly.
+
+* **command if expression**:
+```C++
+   print "Hello world" if x>5
+```
+This command will execute the code before `if` , if the expression after `if` is true.
+
+
+* **command unless expression**:
+```ruby
+   y++ unless x>5
+```
+This command will execute the code before `unless` , if the expression after `unless` is false.
