@@ -86,7 +86,7 @@ use math
 With this command you can import other nectar files. You should write use statements at the top of your program.
 * **Class Declaration**:
 
-```swift
+```rust
 pub class Person{
 
   @name:string
