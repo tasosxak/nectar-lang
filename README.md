@@ -76,7 +76,7 @@ func     class   pub     abstract   var
 # Syntax
 Let's see some commands.
 In nectar you can declare functions, classes and variables.
-The execution of nectar program starts from the main function.
+The execution of nectar program starts from the main function which is one and only one.
 
 * **Class Declaration**:
 
@@ -118,3 +118,68 @@ With the above way you can declare a field in class. Fields are strictly private
   }
 ```
 Methods are by default private. You can make them public by adding the keyword `pub` to the beginning of declaration.
+
+* **Functions**:
+```swift
+func main()->int {
+  var alice:Person = Person.new("alice",18)
+  15 times say "hello world!"
+  
+  return 0
+}
+```
+With the above way you can declare a function in your program.Instead method declaration, the declaration of function starts with the keyword `func`.
+
+* **Variable Declaration**:
+```javascript
+ var x:int
+```
+You can declare a variable in methods and functions.
+
+* **Variable Definition & Declaration**:
+```javascript
+ var x:int = 12
+```
+You can declare & define a variable in methods and functions.
+
+* **Assignment**:
+```javascript
+   x = 53
+```
+* **Math & Assignment**:
+```javascript
+   x += 53 // x = x + 53
+   y -= x  // y = y - x
+   z *= y+5  // z = z * ( y+ 5)
+   x /= 3  // x = x / 3
+   x++  // x = x + 1
+   ++x  // x = x + 1
+   y** //  y = y*y
+   **y //  y = y*y
+   z-- // z = z-1
+   --z // z = z-1
+```
+* **Swapping**:
+```javascript
+   var x:int = 5
+   var y:int = 6
+   x,y = y,x   // x=6 and y=5
+```
+* **Print with line**:
+```swift
+   println "hello world!"
+```
+Prints out the message "hello world" and new line.
+
+* **Print without line**:
+```swift
+   print "hello world!"
+```
+Prints out the message "hello world".
+
+* **Read**:
+```swift
+   read "Give me a number: ",x
+```
+Prints out the message "Give me a number" and waits for input. When the user gives an input and press the enter button,this
+command assigns the input to the variable `x`.
