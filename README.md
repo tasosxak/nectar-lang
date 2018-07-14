@@ -40,7 +40,7 @@ nameofproject
 ```
 
 * src : This folder includes all sources files of project.
-* exec: This folder include the executable file (.cex) of project.
+* exec: This folder includes the executable file (.cex) of project.
 
 
 If you open the `nameofproject.nr` file in `src` folder you will see the below snippet of code:
