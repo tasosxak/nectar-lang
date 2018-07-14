@@ -41,7 +41,7 @@ nameofproject
 * exec: This folder include the executable file (.cex) of project.
 
 
-If you open the nameofproject.nr file in src folder you will see the below snippet of code:
+If you open the `nameofproject.nr` file in `src` folder you will see the below snippet of code:
 
 ```swift
 func main()->int {
@@ -49,7 +49,11 @@ func main()->int {
   return 0
 }
 ```
-```
+# Build your project
+After we created the project let's see how to build it. Writing the below command you can build your poject:
+> nectar build nameofproject
+
+The above command initially calls the prenectar program to unite all the nectar files of your project and saves the result in the `final.nrf` file. After this, the nectar compiler is called, which it produces the bytecode in `nameofproject.cex`. The `nameofproject.cex` is stored in `exec` folder.
 
 ```swift
 pub class Person{
