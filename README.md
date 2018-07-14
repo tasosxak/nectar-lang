@@ -1,6 +1,6 @@
 # colibri
 
-```c++
+```swift
 pub class Person{
 
   @name:string
@@ -16,7 +16,7 @@ pub class Person{
 }
 
 func main()->int {
-  Person alice = Person.new("alice",18)
+  var alice:Person = Person.new("alice",18)
   15 times say "hello world!"
   
   return ok
