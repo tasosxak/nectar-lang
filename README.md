@@ -7,8 +7,37 @@ Nectar's futures include:
 files on a wide variety of different platforms (Windows,Linux,MacOS etc).
 * **Scalability** : You can add libraries and Nectar provides better structure for .
 * **Learnability** : Nectar has clean and easy syntax that allows new developers to learn quickly and easy.
-* **Readability** : Nectar has similar syntax to that of many programming languages (such a Javascript, Swift,C++,Java).
+* **Readability** : Nectar has similar syntax to that of many programming languages (such a Javascript,Ruby, Swift,C++,Java).
 
+
+# Installation
+
+* **Linux** :
+  > git clone  https://github.com/tasosxak/nectar-lang.git
+  
+  > cd nectar-lang
+  
+  > sudo ./init.sh
+  
+  
+  (The downloaded file has already the executable files so it is not necessary to run the last command.)
+ 
+# Create new project
+Writing the below command you can create a new project:
+
+> nectar create nameofproject
+
+The above command creates the below project tree:
+```
+nameofproject
+    |
+    |__ src
+          |__ nameofproject.nr
+    |
+    |__ exec
+          
+          
+```
 
 ```swift
 pub class Person{
