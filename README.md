@@ -178,7 +178,7 @@ Prints out the message "hello world" and new line.
 Prints out the message "hello world".
 
 * **Puts**:
-```swift
+```ruby
    puts "hello world!"
 ```
 Prints out the message "hello world".
@@ -214,7 +214,7 @@ command assigns the input to the variable `x`. The command must be assignment, p
    }
 ```
 * **Times loop**:
-```swift
+```ruby
    15 times puts "Hello world"
 ```
 
@@ -222,7 +222,7 @@ command assigns the input to the variable `x`. The command must be assignment, p
 Single Statements are statements which you can write in one line, fastly.
 
 * **command if expression**:
-```C++
+```python
    print "Hello world" if x>5
 ```
 This command will execute the code before `if` , if the expression after `if` is true.
