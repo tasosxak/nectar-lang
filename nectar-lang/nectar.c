@@ -56,11 +56,11 @@ int main(int argc, char* argv[]){
 		#elif _WIN32
 		sprintf(str,"@echo func main() -> int { >%s\\src\\%s.nr",argv[2],argv[2]);
 		system(str);
-		sprintf(str,"@echo puts \"Hello world!\">%s\\src\\%s.nr",argv[2],argv[2]);
+		sprintf(str,"@echo puts \"Hello world!\">>%s\\src\\%s.nr",argv[2],argv[2]);
 		system(str);
-		sprintf(str,"@echo return 0 >%s\\src\\%s.nr",argv[2],argv[2]);
+		sprintf(str,"@echo return 0 >>%s\\src\\%s.nr",argv[2],argv[2]);
 		system(str);
-		sprintf(str,"@echo } >%s\\src\\%s.nr",argv[2],argv[2]);
+		sprintf(str,"@echo } >>%s\\src\\%s.nr",argv[2],argv[2]);
 		#endif
 		system(str);
 	}
