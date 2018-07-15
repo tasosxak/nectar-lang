@@ -1,0 +1,2499 @@
+%{
+
+//Author: Tasos Temperekidis
+
+#include <string.h>
+#include <stdlib.h>
+#include <stdio.h>
+#include <ctype.h>
+
+#define MHNYMA 0
+
+/* ----------------------------------------------------------- */
+/* --------- Declarations for Syntax-Semantic Analysis ------- */
+/* ----------------------------------------------------------- */
+
+
+#include "nectar_defs.h"
+
+HASH_TAB ht; //Symbol Table for Methods,Classes and declarations
+HASH_TAB arr_st[MAX_SYM_TABLES]; //Method's Symbol Table
+
+int topOfSt = 0; //The current activated method's symbol table
+int TopOfStack=-1;
+int TopOfWhile=-1;
+int TopOfRt = -1;
+int numOfParams = 0;  // For number of method's parameters
+int numOfArguments =0; // For "arguments and parameters matching"
+int enableReturn = 1;
+
+
+/*** FOR MIX CODE GENERATION ***/
+int NUM_BYTES_VAR=0; //Number of variables (for mix variable names)
+int NUM_METH=0; //Number of methods (for mix method names)
+int NUM_PAR=0;
+char NUM_VAR_ARR[7];
+char TEMP_NUM_VAR_ARR[7];
+
+char METHOD_NAME[50];
+char METHOD_NAME_PARS[50];
+char METHOD_NAME_TEMP[25];
+
+char CLASS_NAME[50];
+
+symbol *vs[30];
+symbol *whiles[30];  //For "break in while" checking
+symbol *returns[30]; // Check if return keyword exists for all cases in a method
+
+symbol *p,*p1,*p2,*p3,*p4,*p5,*p6,*p7,*p8,*p9;
+
+AstNode *TreeRoot;
+
+
+%}
+
+
+%union
+{
+    int   yint;
+    char  ystr[81];
+    struct AstNode_tag *stnode;
+}
+
+%token <yint> FALSE TRUE INT RETURN IF ELSE WHILE BREAK PRINT READ PRINTLN TIMES USE UNLESS NOT AND OR REAL PUTS BOOL FUNC RIGHTARROW CLASS PRIVATE PUBLIC ABSTRACT METH VAR
+%token <ystr> DEC_CONST LITERAL REAL_DEC_CONST
+%token <ystr> '(' ')' '{' '}'
+%token <ystr> '*' '/' '+' '-' '=' ';' ','
+%token <ystr> GE '>' LE '<' NE EQ
+%token <ystr> ID
+%token <ystr> INC DEC ADDASSIGN SUBASSIGN
+
+%type <stnode> program definitions meth_list
+%type <stnode> class bodyclass fields field attrs modifier methodef
+%type <stnode> meth func params body formals type
+%type <stnode> decls decl_list decl vars
+%type <stnode> stmts stmt block singlestmt inline
+%type <stnode> expr logAnd_expr not_expr comp_expr
+%type <stnode> addassign subassign assign location method relop listedassign nestedassign
+%type <stnode> add_expr addop term mulop factor incdec
+%type <stnode> actuals args
+
+%nonassoc LOWER_THAN_ELSE
+%nonassoc ELSE
+
+%%
+
+program
+       :  definitions {
+
+		     p1 = findsymb("main",1);//Every program in coral language must have a main function
+		     if(!p1) {
+					printf("Error : 'main' function not found");
+					exit(1);
+				}
+
+			 TreeRoot=MkNode(astProgram,NULL,$1,NULL,NULL,NULL);
+
+
+        }
+    /*  |  EMPTY { TreeRoot=MkNode(astEmptyProgram,NULL,NULL,NULL,NULL,NULL);}*/
+
+       ;
+
+definitions
+       	: class definitions { $$=MkNode(astClassDef,NULL,$1,$2,NULL,NULL); }
+       	| func definitions { $$=MkNode(astFuncDef,NULL,$1,$2,NULL,NULL); }
+       	| decl definitions { $$=MkNode(astDeclDef,NULL,$1,$2,NULL,NULL); }
+       	| /*EMPTY*/  { $$=MkNode(astEmptyDef,NULL,NULL,NULL,NULL,NULL); }
+        ;
+
+
+meth_list
+       :  methodef meth_list {$$=MkNode(astMethSeq,NULL,$1,$2,NULL,NULL); }
+
+       | /*EMPTY*/ { $$=MkNode(astEmptyMethList,NULL,NULL,NULL,NULL,NULL); }
+       ;
+methodef
+       : meth { $$=$1;}
+       ;
+
+class
+       : modifier CLASS ID {
+
+         strcat(CLASS_NAME,$3);
+         p1 = pop_vs();
+
+         p2 = new_symbol(CLASS_NAME);
+         p2->accessor = p1->accessor;
+         p2->lvalue = 0;
+
+         //Check if main method have parameters
+         if((strcmp(p2->name,"Object") == 0)){
+
+           printf("Error: Object class already exists\n");
+           exit(1);
+         }
+
+         add_symbols_to_table(p2,1);
+
+         if(topOfSt == MAX_SYM_TABLES) {
+  				printf("Out of memory :( , the number of classes must be less than %d",MAX_SYM_TABLES); //if the number of methods is greater than MAX_SYM_TABLES constant
+  				exit(1);
+  			 }
+
+
+       } bodyclass {
+
+         $$=MkNode(astClass,p2,$5,NULL,NULL,NULL);
+
+       }
+       ;
+
+modifier
+       	 : /*PRIVATE*/ {
+           $$=MkNode(astPrivateClassMod,NULL,NULL,NULL,NULL,NULL);
+           p1 = new_symbol(""); //create symbol
+ 	         p1->accessor = PRIVATE_ACC;
+ 	         push_vs(p1);
+          }
+       	 | PUBLIC {
+           printf("modifier\n");
+           $$=MkNode(astPublicClassMod,NULL,NULL,NULL,NULL,NULL);
+           p1 = new_symbol(""); //create symbol
+           p1->accessor = PUBLIC_ACC;
+           push_vs(p1);
+         }
+       	 | ABSTRACT{
+           $$=MkNode(astAbstractClassMod,NULL,NULL,NULL,NULL,NULL);
+           p1 = new_symbol(""); //create symbol
+ 	         p1->accessor = ABSTRACT_ACC;
+ 	         push_vs(p1);
+         }
+       	 ;
+
+
+fields
+      	 : field fields {$$=MkNode(astFields,NULL,$1,$2,NULL,NULL);}
+      	 | /* EMPTY */ {$$=MkNode(astEmptyFields,NULL,NULL,NULL,NULL,NULL);}
+      	 ;
+field
+      	 : '@' ID ':' type attrs {
+
+           p1 = pop_vs();
+           p3 = new_symbol($2);
+           p3->sclass = MEMORY;
+           p3->typos = p1->typos;
+           p3->accessor = PRIVATE_ACC;
+           p3->lvalue = 0;
+           add_symbols_to_table(p3,1);
+
+          if(topOfSt == MAX_SYM_TABLES) {
+            printf("Out of memory :( , the number of attributes must be less than %d",MAX_SYM_TABLES); //if the number of methods is greater than MAX_SYM_TABLES constant
+            exit(1);
+          }
+
+          $$=MkNode(astField,p3,$5,NULL,NULL,NULL);
+
+
+         }
+      	 | '@' ID ':' type '=' expr attrs {
+
+
+           p1 = pop_vs();
+           p2 = pop_vs();
+
+           p4 = new_symbol($2);
+           p4->sclass = MEMORY;
+           p4->typos = p2->typos;
+           p4->accessor = PRIVATE_ACC;
+           p4->lvalue = 0;
+
+           add_symbols_to_table(p4,0);
+
+          if(topOfSt == MAX_SYM_TABLES) {
+            printf("Out of memory :( , the number of attributes must be less than %d",MAX_SYM_TABLES); //if the number of methods is greater than MAX_SYM_TABLES constant
+            exit(1);
+          }
+
+           $$=MkNode(astFieldAssign,p4,$6,$7,NULL,NULL);
+
+
+         }
+      	 ;
+
+attrs
+      	: ',' ID attrs {
+
+
+           p1 = pop_vs();
+           //p2 = pop_vs();
+
+           p3 = new_symbol($3);
+           p3->sclass = MEMORY;
+           p3->typos = p1->typos;
+           p3->accessor = PRIVATE_ACC;
+           p3->lvalue = 0;
+
+           add_symbols_to_table(p3,1);
+
+          if(topOfSt == MAX_SYM_TABLES) {
+            printf("Out of memory :( , the number of attributes must be less than %d",MAX_SYM_TABLES); //if the number of methods is greater than MAX_SYM_TABLES constant
+            exit(1);
+          }
+
+
+          $$=MkNode(astAttrs,NULL,$3,NULL,NULL,NULL);
+
+          //push_vs(p2);
+          push_vs(p1);
+
+        }
+
+      	| ',' ID '=' expr attrs {
+
+          p1 = pop_vs();
+          p2 = pop_vs();
+          //p3 = pop_vs();
+
+          p4 = new_symbol($3);
+          p4->sclass = MEMORY;
+          p4->typos = p2->typos;
+          p4->accessor = PRIVATE_ACC;
+          p4->lvalue = 0;
+
+          add_symbols_to_table(p4,0);
+
+          if(topOfSt == MAX_SYM_TABLES) {
+           printf("Out of memory :( , the number of attributes must be less than %d",MAX_SYM_TABLES); //if the number of methods is greater than MAX_SYM_TABLES constant
+           exit(1);
+          }
+
+          $$=MkNode(astAttrsAssign,p4,$4,$5,NULL,NULL);
+
+          //push_vs(p3);
+          push_vs(p2);
+
+        }
+      	| /* EMPTY */ { $$=MkNode(astEmptyAttrs,NULL,NULL,NULL,NULL,NULL); }
+      	;
+
+
+
+bodyclass
+       	 : '{' fields meth_list '}' {$$=MkNode(astBodyClass,NULL,$2,$3,NULL,NULL);
+       	 }
+       	 ;
+
+
+
+meth
+      :  modifier ID {
+
+          strcat(METHOD_NAME,$2);
+		      push_rt(new_symbol("method"));
+
+        } '('params')' RIGHTARROW type {
+
+    			 p1 = pop_vs();
+           p3 = pop_vs();
+    			 p2 = new_symbol(METHOD_NAME);
+    			 p2->lvalue = 0;
+
+    			 set_class_types(p2,METHOD);
+    			 copy_attributes(p2,p1);
+           p2->accessor = p3->accessor;
+
+    			 //Check if main method have parameters
+    			 if((strcmp(p2->name,"main") == 0) && (numOfParams>0)){
+
+    				 printf("Error: The main method must have no parameters\n");
+    				 exit(1);
+
+    			  }
+
+    			 /*Create a pseudonym for this method, which is important for code generation*/
+    			 if(strcmp(p2->name,"main") !=0){
+    				 strcpy(NUM_VAR_ARR, "@METH_");
+    				 sprintf(TEMP_NUM_VAR_ARR, "%d", NUM_METH);
+    				 strcpy(p2->pseudonym, strcat(NUM_VAR_ARR, TEMP_NUM_VAR_ARR));
+    				 NUM_METH++;
+    			 }else{
+    				strcpy(p2->pseudonym,"_main");
+    			 }
+
+
+    			 add_symbols_to_table(p2,0);
+
+    			 if(topOfSt == MAX_SYM_TABLES) {
+    				printf("Out of memory :( , the number of methods must be less than %d",MAX_SYM_TABLES); //if the number of methods is greater than MAX_SYM_TABLES constant
+    				exit(1);
+    			 }
+
+
+
+    			 strcpy(METHOD_NAME,"");
+           //push_vs(p1);
+    			 push_vs(p2);
+		 }
+
+		 body {
+
+		/*Checking for return statement*/
+
+		if( TopOfRt <= 0 || !returns[0] || !returns[1] || strcmp(returns[0]->name,"method") != 0 || strcmp(returns[1]->name,"return" )!=0) {
+			printf("Error: Method '%s' has not return statement\n",$3);
+			exit(1);
+		}
+
+		pop_rt();
+		pop_rt();
+
+
+		p2 = pop_vs();
+
+
+	 	$$=MkNode(astMethLast,p2,$5,$8,$10,NULL);
+
+		if(topOfSt < MAX_SYM_TABLES)
+				topOfSt++;
+
+		numOfParams =0; //reset the number of parameters for the next method
+		enableReturn=1;
+		NUM_PAR =0;
+		NUM_BYTES_VAR = 0;
+	}
+
+      ;
+
+func
+      : FUNC ID {
+
+      		 strcat(METHOD_NAME,$2);
+      		 push_rt(new_symbol("method"));
+
+      		 } '('params')' RIGHTARROW type {
+
+      			 p1 = pop_vs();
+
+      			 p2 = new_symbol(METHOD_NAME);
+      			 p2->lvalue = 0;
+
+      			 set_class_types(p2,METHOD);
+      			 copy_attributes(p2,p1);
+
+
+      			 //Check if main method have parameters
+      			 if((strcmp(p2->name,"main") == 0) && (numOfParams>0)){
+
+      				 printf("Error: The main method must have no parameters\n");
+      				 exit(1);
+
+      			  }
+
+      			 /*Create a pseudonym for this method, which is important for code generation*/
+      			 if(strcmp(p2->name,"main") !=0){
+      				 strcpy(NUM_VAR_ARR, "@METH_");
+      				 sprintf(TEMP_NUM_VAR_ARR, "%d", NUM_METH);
+      				 strcpy(p2->pseudonym, strcat(NUM_VAR_ARR, TEMP_NUM_VAR_ARR));
+      				 NUM_METH++;
+      			 }else{
+      				strcpy(p2->pseudonym,"_main");
+      			 }
+
+
+      			 add_symbols_to_table(p2,1);
+
+      			 if(topOfSt == MAX_SYM_TABLES) {
+      				printf("Out of memory :( , the number of methods must be less than %d",MAX_SYM_TABLES); //if the number of methods is greater than MAX_SYM_TABLES constant
+      				exit(1);
+      			 }
+
+
+
+      			 strcpy(METHOD_NAME,"");
+            // push_vs(p1);
+             push_vs(p2);
+      		 }
+
+      		 body {
+
+      		/*Checking for return statement*/
+
+      		if( TopOfRt <= 0 || !returns[0] || !returns[1] || strcmp(returns[0]->name,"method") != 0 || strcmp(returns[1]->name,"return" )!=0) {
+      			printf("Error: Method '%s' has not return statement\n",$2);
+      			exit(1);
+      		}
+
+      		pop_rt();
+      		pop_rt();
+
+
+      		p2 = pop_vs();
+
+
+
+      	 	$$=MkNode(astFuncLast,p2,$8,$5,$10,NULL);
+
+      		if(topOfSt < MAX_SYM_TABLES)
+      				topOfSt++;
+
+      		numOfParams =0; //reset the number of parameters for the next method
+      		enableReturn=1;
+      		NUM_PAR =0;
+      		NUM_BYTES_VAR = 0;
+      	}
+
+            ;
+
+params
+      : formals type ID {
+
+
+         p2 = pop_vs();
+	       p3 = new_symbol($3);
+         p3->arg = 1;
+	       copy_attributes(p3,p2);
+
+		     sprintf(METHOD_NAME_TEMP,"%d",p2->typos);
+		     strcat(METHOD_NAME,METHOD_NAME_TEMP);
+
+		     /*Create a pseudonym for this parameter, which is important for code generation*/
+
+		     strcpy(NUM_VAR_ARR, "ebp + ");
+		     sprintf(TEMP_NUM_VAR_ARR, "%d", 4 * (NUM_PAR + 2));
+		     strcpy(p3->pseudonym, strcat(NUM_VAR_ARR, TEMP_NUM_VAR_ARR));
+		     NUM_PAR ++;
+
+	       add_symbols_to_table(p3,0);
+	       $$=MkNode(astParamSeq,p3,$1,$2,NULL,NULL);
+		     numOfParams++;
+         p3->index = numOfParams;
+          }
+      | /* EMPTY */ { $$=MkNode(astParamEmpty,NULL,NULL,NULL,NULL,NULL);}
+
+      ;
+
+formals
+      : formals type ID ',' {
+
+	     p2 = pop_vs();
+	     p3 = new_symbol($3);
+	     p3->arg = 1;
+	     copy_attributes(p3,p2);
+
+		   sprintf(METHOD_NAME_TEMP,"%d",p2->typos);
+		   strcat(METHOD_NAME,METHOD_NAME_TEMP);
+
+		   strcpy(NUM_VAR_ARR, "ebp + ");
+		   sprintf(TEMP_NUM_VAR_ARR, "%d", 4 *(NUM_PAR+2));
+		   strcpy(p3->pseudonym, strcat(NUM_VAR_ARR, TEMP_NUM_VAR_ARR));
+		   NUM_PAR++;
+
+	     add_symbols_to_table(p3,0);
+	     $$=MkNode(astFormalsSeq,p3,$1,$2,NULL,NULL);
+		   numOfParams++;
+       p3->index = numOfParams;
+		 }
+      | /* EMPTY */ { $$=MkNode(astFormalsEmpty,NULL,NULL,NULL,NULL,NULL);}
+
+      ;
+
+type
+      :INT {
+
+          $$=MkNode(astInt,NULL,NULL,NULL,NULL,NULL);
+ 	        p1 = new_symbol(""); //create symbol
+	        set_class_types(p1,$1); //the type of symbol is integer
+	        push_vs(p1);
+
+        }
+	  | REAL {
+
+          $$=MkNode(astReal,NULL,NULL,NULL,NULL,NULL);
+ 	        p1 = new_symbol(""); //create symbol
+	        set_class_types(p1,$1); //the type of symbol is real
+	        push_vs(p1);
+
+         }
+	  | BOOL {
+
+          $$=MkNode(astBool,NULL,NULL,NULL,NULL,NULL);
+ 	        p1 = new_symbol(""); //create symbol
+	        set_class_types(p1,$1); //the type of symbol is integer
+	        push_vs(p1);
+
+        }
+    | ID {
+
+          $$=MkNode(astPointer,NULL,NULL,NULL,NULL,NULL);
+ 	        p1 = new_symbol(""); //create symbol
+	       // set_class_types(p1,$1); //the type of symbol is integer
+	        push_vs(p1);
+
+        }
+      ;
+
+body
+      : '{'decls stmts'}' {
+	 $$=MkNode(astBody,NULL,$2,$3,NULL,NULL);}
+      ;
+
+
+decls
+      : decl_list decl { $$=MkNode(astDeclsSeq,NULL,$1,$2,NULL,NULL);}
+      | /* EMPTY */ { $$=MkNode(astDeclsEmpty,NULL,NULL,NULL,NULL,NULL);}
+
+      ;
+
+decl_list
+      : decl_list decl { $$=MkNode(astDeclListSeq,NULL,$1,$2,NULL,NULL);}
+      | /* EMPTY */ { $$=MkNode(astDeclListEmpty,NULL,NULL,NULL,NULL,NULL);}
+
+      ;
+
+decl
+      : VAR ID ':' type {
+
+		p1 = pop_vs();
+		p2 = new_symbol($2);
+	    copy_attributes(p2, p1);
+
+		/*Create a pseudonym for this variable, which is important for code generation*/
+		strcpy(NUM_VAR_ARR, "ebp - ");
+    NUM_BYTES_VAR-=1;
+    p2->index = NUM_BYTES_VAR;
+		switch(p1->typos){
+			case INT:
+
+				sprintf(TEMP_NUM_VAR_ARR, "%d", NUM_BYTES_VAR );
+
+			break;
+			case REAL:
+
+				sprintf(TEMP_NUM_VAR_ARR, "%d", NUM_BYTES_VAR);
+			break;
+			case BOOL:
+				sprintf(TEMP_NUM_VAR_ARR, "%d", NUM_BYTES_VAR );
+
+			break;
+		}
+
+		strcpy(p2->pseudonym, strcat(NUM_VAR_ARR, TEMP_NUM_VAR_ARR));
+
+
+		p2->sclass = MEMORY;
+		add_symbols_to_table(p2,0);
+
+		push_vs(p1);
+
+
+  } vars /*';'*/ {
+
+		pop_vs();
+		$$=MkNode(astDecl,NULL,$4,$6,NULL,NULL);
+
+        }
+
+	  | VAR  ID ':' type '[' DEC_CONST ']' {
+
+		p1 = pop_vs();
+		p2 = new_symbol($2);
+	    copy_attributes(p2, p1);
+
+		add_array_dcl(p2,atoi($6));
+
+		/*Create a pseudonym for this variable, which is important for code generation*/
+		strcpy(NUM_VAR_ARR, "ebp - ");
+
+		switch(p1->typos){
+			case INT:
+			    NUM_BYTES_VAR+=4*(atoi($6));
+				sprintf(TEMP_NUM_VAR_ARR, "%d", NUM_BYTES_VAR );
+
+			break;
+			case REAL:
+				NUM_BYTES_VAR+=8*(atoi($6));
+				sprintf(TEMP_NUM_VAR_ARR, "%d", NUM_BYTES_VAR);
+
+			break;
+			case BOOL:
+			    NUM_BYTES_VAR+=4*(atoi($6));
+				sprintf(TEMP_NUM_VAR_ARR, "%d", NUM_BYTES_VAR );
+
+			break;
+		}
+
+		strcpy(p2->pseudonym, strcat(NUM_VAR_ARR, TEMP_NUM_VAR_ARR));
+
+
+		p2->sclass = MEMORY;
+		add_symbols_to_table(p2,0);
+
+		push_vs(p1);
+
+
+		} vars /*';'*/ {
+
+		pop_vs();
+		$$=MkNode(astDecl,NULL,$4,$9,NULL,NULL);
+
+        }
+      | VAR ID ':' type '=' expr {
+
+		   p3 = pop_vs();
+	     p1 = pop_vs();
+	     p2 = new_symbol($2);
+	     copy_attributes(p2, p1);
+
+
+		 strcpy(NUM_VAR_ARR, "ebp - ");
+     NUM_BYTES_VAR -=1;
+     p2->index = NUM_BYTES_VAR;
+		switch(p1->typos){
+			case INT:
+				sprintf(TEMP_NUM_VAR_ARR, "%d", NUM_BYTES_VAR);
+
+			break;
+			case REAL:
+				sprintf(TEMP_NUM_VAR_ARR, "%d", NUM_BYTES_VAR);
+
+			break;
+			case BOOL:
+				sprintf(TEMP_NUM_VAR_ARR, "%d", NUM_BYTES_VAR);
+
+			break;
+		}
+		 strcpy(p2->pseudonym, strcat(NUM_VAR_ARR, TEMP_NUM_VAR_ARR));
+
+
+		 if(!isSuperType(p1->typos, p3->typos)) {
+			 printf("Warning: The type of '%s' is not '%d'\n",p1->name,p3->typos);
+
+
+		 }
+
+	     copy_value(p2,p3);
+		 p2->sclass = MEMORY;
+	     add_symbols_to_table(p2,0);
+
+		 push_vs(p1);
+
+	     } vars /*';'*/ {
+
+	     pop_vs();
+	     $$=MkNode(astDeclAssign,NULL,$4,$6,$8,NULL);
+	     }
+
+      ;
+
+vars
+      :',' ID {
+		 p1 = pop_vs();
+		 p2 = new_symbol($2);
+	     copy_attributes(p2, p1);
+
+
+		 strcpy(NUM_VAR_ARR, "ebp - ");
+     NUM_BYTES_VAR-=1;
+     p2->index = NUM_BYTES_VAR;
+		 switch(p1->typos){
+			case INT:
+				sprintf(TEMP_NUM_VAR_ARR, "%d", NUM_BYTES_VAR );
+
+			break;
+			case REAL:
+				sprintf(TEMP_NUM_VAR_ARR, "%d", NUM_BYTES_VAR);
+
+			break;
+			case BOOL:
+				sprintf(TEMP_NUM_VAR_ARR, "%d", NUM_BYTES_VAR );
+
+			break;
+		}
+
+		 strcpy(p2->pseudonym, strcat(NUM_VAR_ARR, TEMP_NUM_VAR_ARR));
+
+
+		 add_symbols_to_table(p2,0);
+
+		 p2->sclass = MEMORY;
+		 push_vs(p1);
+
+	     } vars {
+
+		p = pop_vs();
+		$$=MkNode(astVarsSeq,p,$4,NULL,NULL,NULL);
+		push_vs(p);
+
+        }
+      |',' ID '=' expr {
+
+		   p3 = pop_vs();
+	     p1 = pop_vs();
+	     p2 = new_symbol($2);
+	     copy_attributes(p2, p1);
+
+
+		strcpy(NUM_VAR_ARR, "ebp - ");
+    NUM_BYTES_VAR-=1;
+    p2->index = NUM_BYTES_VAR;
+		switch(p1->typos){
+			case INT:
+
+				sprintf(TEMP_NUM_VAR_ARR, "%d", NUM_BYTES_VAR );
+
+			break;
+			case REAL:
+				sprintf(TEMP_NUM_VAR_ARR, "%d", NUM_BYTES_VAR);
+
+			break;
+			case BOOL:
+				sprintf(TEMP_NUM_VAR_ARR, "%d", NUM_BYTES_VAR );
+
+			break;
+		}
+		 strcpy(p2->pseudonym, strcat(NUM_VAR_ARR, TEMP_NUM_VAR_ARR));
+
+
+		 if(!isSuperType(p1->typos, p3->typos)) {
+			 printf("Warning: The type of '%s' is not '%d'\n",p1->name,p3->typos);
+
+
+		 }
+
+	     copy_value(p2,p3);
+	     add_symbols_to_table(p2,0);
+
+		 p2->sclass = MEMORY;
+	     push_vs(p1);
+
+
+	  } vars {
+
+         p=pop_vs();
+	     $$=MkNode(astVarAssign,p,$4,$6,NULL,NULL);
+	     push_vs(p);
+      }
+      | /* EMPTY */ { $$=MkNode(astVarEmpty,NULL,NULL,NULL,NULL,NULL); }
+
+      ;
+
+stmts
+      : stmts stmt { $$=MkNode(astStmtSeq,NULL,$1,$2,NULL,NULL); pop_vs();  }
+      | /* EMPTY */ { $$=MkNode(astStmtEmpty,NULL,NULL,NULL,NULL,NULL);}
+      ;
+
+singlestmt
+        : assign {
+			$$=$1;
+			pop_vs();
+			push_vs(NULL);
+	    }
+	    | addassign {
+
+			$$=$1;
+			push_vs(NULL);
+        }
+	    | subassign {
+			$$=$1;
+			push_vs(NULL);
+        }
+	    | listedassign {
+			$$=$1;
+			push_vs(NULL);
+        }
+	    | PRINT expr {
+
+		  $$=MkNode(astPrintStmt,NULL,$2,NULL,NULL,NULL);
+		  pop_vs();
+		  push_vs(NULL);
+
+	    }
+	    | PRINTLN expr {
+
+		  $$=MkNode(astPrintLnStmt,NULL,$2,NULL,NULL,NULL);
+		  pop_vs();
+		  push_vs(NULL);
+
+	    }
+	    | PRINT LITERAL {
+
+		  p2 = new_symbol($2);
+		  p2->typos = LITERAL;
+
+		  $$=MkNode(astPrintLtStmt,p2,NULL,NULL,NULL,NULL);
+
+		  push_vs(NULL);
+
+	    }
+	    | PRINTLN LITERAL {
+
+		  p2 = new_symbol($2);
+		  p2->typos = LITERAL;
+
+		  $$=MkNode(astPrintLnLtStmt,p2,NULL,NULL,NULL,NULL);
+
+		  push_vs(NULL);
+
+	    }
+	    | READ LITERAL ',' location {
+
+		  p2 = new_symbol($2);
+		  p2->typos = LITERAL;
+
+		  $$=MkNode(astReadStmt,p2,$4,NULL,NULL,NULL);
+		  pop_vs();
+		  push_vs(NULL);
+
+	    }
+	    | expr {
+
+			pop_vs();
+			$$=MkNode(astExprStmt,NULL,$1,NULL,NULL,NULL);
+			push_vs(NULL);
+		}
+	    | PUTS inline {
+
+		  $$=MkNode(astPutsStmt,NULL,$2,NULL,NULL,NULL);
+
+		  push_vs(NULL);
+
+	  }
+	  ;
+code
+	  :{ if(enableReturn==1)
+		         push_rt(new_symbol("if"));
+			 }
+		;
+
+stmt
+      : assign /*';'*/ {
+			$$=$1;
+			pop_vs();
+			push_vs(NULL);
+      }
+	  | addassign /*';'*/ {
+			$$=$1;
+			push_vs(NULL);
+      }
+	  | subassign /*';'*/ {
+			$$=$1;
+			push_vs(NULL);
+      }
+	  | listedassign /*';'*/ {
+			$$=$1;
+			push_vs(NULL);
+      }
+    | RETURN expr /*';'*/ {
+
+      if(enableReturn == 1){
+
+				if(strcmp(returns[TopOfRt]->name,"method") == 0){
+					enableReturn =0;
+					push_rt(new_symbol("return"));
+
+				}else{
+
+					if(strcmp(returns[TopOfRt]->name,"word") ==0 || strcmp(returns[TopOfRt]->name,"return") ==0 )
+					 {
+						 pop_rt();
+						 push_rt(new_symbol("return"));
+					 }else{
+				        push_rt(new_symbol("return"));
+					 }
+				  }
+			}
+			$$=MkNode(astReturnStmt,NULL,$2,NULL,NULL,NULL);
+			p = pop_vs();
+
+
+			if( !isSuperType(vs[0]->typos, p->typos)){
+				printf("Error: The returned type of method '%s' is not '%d'\n", vs[0]->name,p->typos);
+				exit(1);
+			}
+      push_vs(NULL);
+
+      }
+	  | IF code '(' expr ')' stmt  %prec LOWER_THAN_ELSE {
+
+
+			p6 = pop_vs();
+			p4 = pop_vs();
+
+			//check_ifelse(p4,p6,p9);
+
+			if(enableReturn == 1){
+
+				if (strcmp(returns[TopOfRt]->name, "return") ==0 || strcmp(returns[TopOfRt]->name, "word") ==0){
+								pop_rt();
+					}
+
+			   pop_rt();
+
+			}
+
+			$$=MkNode(astIfStmt,NULL,$4,$6,NULL,NULL);
+
+			push_vs(NULL);
+
+
+
+	  }
+      | IF code '(' expr ')' stmt ELSE {
+				 if (enableReturn == 1){
+
+							if (strcmp(returns[TopOfRt]->name, "return") !=0 && strcmp(returns[TopOfRt]->name, "word") !=0){
+								push_rt(new_symbol("word"));
+							}
+
+								push_rt(new_symbol("else"));
+					}
+			   } stmt {
+
+			p9 = pop_vs();
+			p6 = pop_vs();
+			p4 = pop_vs();
+
+			//check_ifelse(p4,p6,p9);
+
+			if(enableReturn == 1){
+
+				if (strcmp(returns[TopOfRt]->name, "return") !=0 && strcmp(returns[TopOfRt]->name, "word") !=0){
+								push_rt(new_symbol("word"));
+					}
+
+				p7 = pop_rt();
+				p5 = pop_rt();
+				p3 = pop_rt();
+				p2 = pop_rt();
+
+				if(strcmp(p3->name,"return") ==0  && strcmp(p7->name,"return") == 0)
+					push_rt(new_symbol("return"));
+				else if(strcmp(returns[TopOfRt]->name, "word") !=0)
+					  push_rt(new_symbol("word"));
+
+
+
+			}
+
+			$$=MkNode(astIfElseStmt,NULL,$4,$6,$9,NULL);
+
+			push_vs(NULL);
+
+      }
+	  | singlestmt IF expr /*';'*/ {
+
+		  p3 = pop_vs();
+		  p1 = pop_vs();
+
+		  $$ = MkNode(astSingleIfStmt,NULL,$1,$3,NULL,NULL);
+
+		  push_vs(NULL);
+
+	  }
+	  | singlestmt UNLESS expr /*';'*/ {
+
+		  p3 = pop_vs();
+		  p1 = pop_vs();
+
+		  $$ = MkNode(astSingleUnlessStmt,NULL,$1,$3,NULL,NULL);
+
+		  push_vs(NULL);
+
+	  }
+      | WHILE { p = new_symbol("");
+				push_wh(p);
+				enableReturn =0;
+				} '('expr')' stmt {
+
+			$$=MkNode(astWhileStmt,NULL,$4,$6,NULL,NULL);
+			p6=pop_vs();
+			p4=pop_vs();
+			//check_while(p4,p6);
+			pop_wh();
+		    if(TopOfWhile <0) enableReturn=1;
+			push_vs(NULL);
+
+     }
+	 | expr TIMES { p = new_symbol("");
+				push_wh(p);
+				enableReturn =0;
+				} stmt {
+
+
+			p5=pop_vs();
+			p1=pop_vs();
+			//check_while(p4,p6);
+
+			if( p1->typos != INT) {
+
+				printf("Error: The number of loop in 'times' statement must be integer\n");
+				exit(1);
+			}
+
+			$$=MkNode(astTimesStmt,NULL,$1,$4,NULL,NULL);
+			pop_wh();
+		    if(TopOfWhile <0) enableReturn=1;
+			push_vs(NULL);
+		}
+      | BREAK /*';'*/ {
+			 p = pop_wh();
+			 if(!p) {
+				 printf("Error: break statement not within loop ");
+				 exit(1);
+
+			 }else{
+
+				 push_wh(p);
+			 }
+
+			 $$=MkNode(astBreakStmt,NULL,NULL,NULL,NULL,NULL);
+			 push_vs(NULL);
+        }
+      | block {
+			$$=$1;
+			push_vs(NULL);
+        }
+	  | PRINT expr /*';'*/{
+
+		  $$=MkNode(astPrintStmt,NULL,$2,NULL,NULL,NULL);
+		  pop_vs();
+		  push_vs(NULL);
+
+	  }
+	  | PRINTLN expr /*';'*/{
+
+		  $$=MkNode(astPrintLnStmt,NULL,$2,NULL,NULL,NULL);
+		  pop_vs();
+		  push_vs(NULL);
+
+	  }
+	  | PRINT LITERAL /*';'*/{
+
+		  p2 = new_symbol($2);
+		  p2->typos = LITERAL;
+
+		  $$=MkNode(astPrintLtStmt,p2,NULL,NULL,NULL,NULL);
+
+		  push_vs(NULL);
+
+	  }
+	  | PRINTLN LITERAL /*';'*/{
+
+		  p2 = new_symbol($2);
+		  p2->typos = LITERAL;
+
+		  $$=MkNode(astPrintLnLtStmt,p2,NULL,NULL,NULL,NULL);
+
+		  push_vs(NULL);
+
+	  }
+	  | PUTS inline /*';'*/ {
+
+		  $$=MkNode(astPutsStmt,NULL,$2,NULL,NULL,NULL);
+
+		  push_vs(NULL);
+
+	  }
+	  | READ LITERAL ',' location /*';'*/ {
+
+		  p2 = new_symbol($2);
+		  p2->typos = LITERAL;
+
+		  $$=MkNode(astReadStmt,p2,$4,NULL,NULL,NULL);
+		  pop_vs();
+		  push_vs(NULL);
+
+	  }
+	  | expr /*';'*/ {
+
+			pop_vs();
+			$$=MkNode(astExprStmt,NULL,$1,NULL,NULL,NULL);
+			push_vs(NULL);
+		}
+
+      /*| ';' {
+
+			$$=MkNode(astNullStmt,NULL,NULL,NULL,NULL,NULL);
+			//push_vs(NULL);
+		}*/
+
+      ;
+
+inline
+	  : expr ',' inline {
+
+		  p1 = pop_vs();
+
+		  $$=MkNode(astExprInline,NULL,$1,$3,NULL,NULL);
+
+
+	  }
+	  | LITERAL ',' inline {
+
+		  p2 = new_symbol($1);
+		  p2->typos = LITERAL;
+
+		  $$=MkNode(astLiteralInline,p2,$3,NULL,NULL,NULL);
+
+	  }
+	  | expr {
+
+		  p1 = pop_vs();
+
+		  $$=MkNode(astSingleExprInline,NULL,$1,NULL,NULL,NULL);
+
+
+	  }
+	  | LITERAL {
+
+		  p2 = new_symbol($1);
+		  p2->typos = LITERAL;
+
+		  $$=MkNode(astSingleLiteralInline,p2,NULL,NULL,NULL,NULL);
+
+	  }
+	;
+block
+      :'{' stmts '}' { $$=$2;}
+
+      ;
+
+addassign
+	  :  location ADDASSIGN expr {
+
+		   $$=MkNode(astAddAssign,NULL,$1,$3,NULL,NULL);
+		   p3 = pop_vs();
+		   p1 = pop_vs();
+		   check_assignment(p1,p3);
+
+		   if(!isSuperType(p1->typos, p3->typos)) {
+			 printf("Warning: The type of '%s' is not '%d'\n",p1->name,p3->typos);
+
+
+		     }
+
+		   //push_vs(p3);
+	  }
+
+subassign
+	  :  location SUBASSIGN expr {
+
+		   $$=MkNode(astSubAssign,NULL,$1,$3,NULL,NULL);
+		   p3 = pop_vs();
+		   p1 = pop_vs();
+		   check_assignment(p1,p3);
+
+		   if(!isSuperType(p1->typos, p3->typos)) {
+			 printf("Warning: The type of '%s' is not '%d'\n",p1->name,p3->typos);
+
+
+		    }
+		   //push_vs(p3);
+	  }
+
+
+
+assign
+      : location '='expr {
+
+		 $$=MkNode(astAssign,NULL,$1,$3,NULL,NULL);
+	     p3 = pop_vs();
+	     p1 = pop_vs();
+
+		 check_assignment(p1,p3);
+
+
+		  if(!isSuperType(p1->typos, p3->typos)) {
+			 printf("Warning: The type of '%s' is not '%d'\n",p1->name,p3->typos);
+
+
+		 }
+
+
+		 push_vs(p3);
+
+        }
+
+	   | location '=' assign {
+
+		 $$=MkNode(astAssignSeq,NULL,$1,$3,NULL,NULL);
+	     p3 = pop_vs();
+	     p1 = pop_vs();
+		 check_assignment(p1,p3);
+
+		 if(!isSuperType(p1->typos, p3->typos)) {
+			 printf("Warning: The type of '%s' is not '%d'\n",p1->name,p3->typos);
+
+
+		 }
+
+
+		 push_vs(p3);
+
+	   }
+
+      ;
+
+listedassign
+		: location ',' nestedassign ',' expr {
+
+
+	     p3 = pop_vs();
+	     p1 = pop_vs();
+		 check_assignment(p1,p3);
+		 $$=MkNode(astListedAssign,NULL,$1,$3,$5,NULL);
+
+		}
+		;
+nestedassign
+		:  location ',' nestedassign ',' expr {
+
+	     p3 = pop_vs();
+	     p1 = pop_vs();
+		 check_assignment(p1,p3);
+
+		 $$=MkNode(astNestedAssign,NULL,$1,$3,$5,NULL);
+
+        }
+		| location '=' expr  /* EMPTY */ {
+
+		 p3 = pop_vs();
+	     p1 = pop_vs();
+		 check_assignment(p1,p3);
+
+		 $$=MkNode(astEmbedAssign,NULL,$1,$3,NULL,NULL);
+
+		 }
+		;
+
+
+method
+       :ID {
+
+
+    			//strcat(METHOD_NAME,$1);
+    			p1 = new_symbol($1);
+
+    			/*
+    			if(strcmp(p1->name,"main") == 0) {
+    				printf("ERROR: You can't call the main method");
+    				exit(1);
+    			}*/
+
+
+    			push_vs(p1);
+    			$$=MkNode(astMethodName,p1,NULL,NULL,NULL,NULL);
+
+             }
+          ;
+
+location
+      :ID {
+			p1 = findsymb($1,0);
+
+			if(p1!=NULL){
+				//copy_symbol(p2,p1);
+				push_vs(p1);
+			}
+			else{
+
+				printf("Error: '%s' undeclared variable",$1);
+				exit(1);
+			 }
+			//copy_symbol(p2,p1);
+			$$=MkNode(astLocation,p1,NULL,NULL,NULL,NULL);
+}
+      ;
+
+
+
+
+expr
+		: expr OR logAnd_expr {
+
+			p3 = pop_vs();
+			p1 = pop_vs();
+
+			p = new_symbol("");
+
+			if (p1->sclass == CONSTANT && p3->sclass == CONSTANT)
+				p->sclass = CONSTANT;
+
+			switch(p1->typos){
+
+				 case INT:
+						switch(p3->typos){
+							case REAL:
+								 printf("Error: bad operand types for binary operator \n");
+								 exit(1);
+							break;
+							case INT:
+								 printf("Error: bad operand types for binary operator \n");
+								 exit(1);
+							break;
+
+						}
+
+				 break;
+				 case REAL:
+
+						switch(p3->typos){
+							case REAL:
+
+								 printf("Error: bad operand types for binary operator \n");
+								 exit(1);
+
+							break;
+							case INT:
+
+								 printf("Error: bad operand types for binary operator \n");
+								 exit(1);
+
+							break;
+
+						}
+				 break;
+				 case BOOL:
+
+						 switch(p3->typos){
+
+								case REAL:
+
+									printf("Error: bad operand types for binary operator \n");
+									exit(1);
+
+								break;
+								case INT:
+
+									printf("Error: bad operand types for binary operator \n");
+									exit(1);
+
+								break;
+								case BOOL:
+									 p->typos = BOOL;
+								break;
+
+						  }
+
+				 break;
+
+
+
+			 }
+
+			$$=MkNode(astOrExpr,NULL,$1,$3,NULL,NULL);
+			//p = check_logic_op(p1,p3);
+			push_vs(p);
+
+		}
+		| logAnd_expr{ $$= $1;}
+		;
+
+
+logAnd_expr
+		: logAnd_expr AND not_expr {
+
+			p3 = pop_vs();
+			p1 = pop_vs();
+
+			p = new_symbol("");
+
+			if (p1->sclass == CONSTANT && p3->sclass == CONSTANT)
+				p->sclass = CONSTANT;
+
+			switch(p1->typos){
+
+				 case INT:
+						switch(p3->typos){
+							case REAL:
+								 printf("Error: bad operand types for binary operator \n");
+								 exit(1);
+							break;
+							case INT:
+								 printf("Error: bad operand types for binary operator \n");
+								 exit(1);
+							break;
+
+						}
+
+				 break;
+				 case REAL:
+
+						switch(p3->typos){
+							case REAL:
+
+								 printf("Error: bad operand types for binary operator \n");
+								 exit(1);
+
+							break;
+							case INT:
+
+								 printf("Error: bad operand types for binary operator \n");
+								 exit(1);
+
+							break;
+
+						}
+				 break;
+				 case BOOL:
+
+						 switch(p3->typos){
+								case REAL:
+
+									printf("Error: bad operand types for binary operator \n");
+									exit(1);
+
+								break;
+								case INT:
+
+									printf("Error: bad operand types for binary operator \n");
+									exit(1);
+
+								break;
+								case BOOL:
+									 p->typos = BOOL;
+								break;
+
+						  }
+
+				 break;
+
+
+
+			 }
+
+			$$=MkNode(astAndExpr,NULL,$1,$3,NULL,NULL);
+			//p = check_logic_op(p1,p3);
+			push_vs(p);
+
+		}
+		| not_expr { $$ = $1;}
+		;
+
+not_expr
+	  :  NOT comp_expr {
+
+			p2 = pop_vs();
+
+			if( p2->typos != BOOL){
+
+				 printf("Error: bad operand types for binary operator \n");
+				 exit(1);
+
+			}
+
+			$$=MkNode(astNotExpr,NULL,$2,NULL,NULL,NULL);
+
+			push_vs(p2);
+
+
+	  }
+	  |  comp_expr { $$=$1;}
+	  ;
+
+comp_expr
+      :add_expr relop add_expr {
+
+		p3 = pop_vs();
+		p1 = pop_vs();
+
+		p = new_symbol("");
+
+		if (p1->sclass == CONSTANT && p3->sclass == CONSTANT)
+				p->sclass = CONSTANT;
+
+		switch(p1->typos){
+
+			 case INT:
+					switch(p3->typos){
+						case REAL:
+							p->typos = INT;
+						break;
+						case INT:
+							p->typos = INT;
+						break;
+						case BOOL:
+						    printf("Error: bad operand types for binary operator \n");
+							exit(1);
+						break;
+
+					}
+
+			 break;
+			 case REAL:
+
+					switch(p3->typos){
+						case REAL:
+							p->typos = INT;
+						break;
+						case INT:
+							p->typos = INT;
+						break;
+						case BOOL:
+						    printf("Error: bad operand types for binary operator \n");
+							exit(1);
+						break;
+
+					}
+			 break;
+			 case BOOL:
+
+					if( $2->NodeType == astEOp || $2->NodeType == astNeOp){
+
+							switch(p3->typos){
+								case REAL:
+									printf("Error: bad operand types for binary operator \n");
+								break;
+								case INT:
+									printf("Error: bad operand types for binary operator \n");
+								break;
+								case BOOL:
+									p->typos = BOOL;
+								break;
+
+							}
+					}
+					else {
+						printf("Error: bad operand types for binary operator \n");
+						exit(1);
+					}
+
+			 break;
+
+
+		 }
+
+		$$=MkNode(astCompExpr,NULL,$1,$2,$3,NULL);
+		//p = check_logic_op(p1,p3);
+	    push_vs(p);
+}
+      | add_expr { $$=$1;}
+      ;
+
+relop
+      :GE { $$=MkNode(astGeOp,NULL,NULL,NULL,NULL,NULL);}
+      |'>' { $$=MkNode(astGOp,NULL,NULL,NULL,NULL,NULL);}
+      |LE  { $$=MkNode(astLeOp,NULL,NULL,NULL,NULL,NULL);}
+      |'<' { $$=MkNode(astLOp,NULL,NULL,NULL,NULL,NULL);}
+      |NE { $$=MkNode(astNeOp,NULL,NULL,NULL,NULL,NULL);}
+      |EQ { $$=MkNode(astEOp,NULL,NULL,NULL,NULL,NULL);}
+
+      ;
+
+add_expr
+       :add_expr addop term {
+
+
+	     p3 = pop_vs();
+		 p1 = pop_vs();
+
+		 p = new_symbol("");
+
+		 if (p1->sclass == CONSTANT && p3->sclass == CONSTANT)
+				p->sclass = CONSTANT;
+
+		switch(p1->typos){
+
+			 case INT:
+					switch(p3->typos){
+						case REAL:
+							p->typos = REAL;
+						break;
+						case INT:
+							p->typos = INT;
+						break;
+						case BOOL:
+						    printf("Error: bad operand types for binary operator \n");
+							exit(1);
+						break;
+
+					}
+
+			 break;
+			 case REAL:
+
+					switch(p3->typos){
+						case REAL:
+							p->typos = REAL;
+						break;
+						case INT:
+							p->typos = REAL;
+						break;
+						case BOOL:
+						    printf("Error: bad operand types for binary operator \n");
+							exit(1);
+						break;
+
+					}
+			 break;
+			 case BOOL:
+
+					printf("Error: bad operand types for binary operator \n");
+				    exit(1);
+
+			 break;
+
+
+		 }
+
+         $$=MkNode(astAddExpr,NULL,$1,$2,$3,NULL);
+	     push_vs(p);
+        }
+       | term { $$=$1;}
+       ;
+
+addop
+     :'+' { $$=MkNode(astAddOp,NULL,NULL,NULL,NULL,NULL);}
+     |'-' { $$=MkNode(astSubOp,NULL,NULL,NULL,NULL,NULL);}
+     ;
+
+term
+     : term mulop factor {
+
+
+	     p3 = pop_vs();
+	     p1 = pop_vs();
+
+		 p = new_symbol("");
+
+		 //p = check_muldiv_arithm_op(p1,p3);
+
+		 if (p1->sclass == CONSTANT && p3->sclass == CONSTANT)
+				p->sclass = CONSTANT;
+
+		 switch(p1->typos){
+
+			 case INT:
+					switch(p3->typos){
+						case REAL:
+							p->typos = REAL;
+						break;
+						case INT:
+							p->typos = INT;
+						break;
+						case BOOL:
+						    printf("Error: bad operand types for binary operator \n");
+							exit(1);
+						break;
+
+					}
+
+			 break;
+			 case REAL:
+
+					switch(p3->typos){
+						case REAL:
+							p->typos = REAL;
+						break;
+						case INT:
+							p->typos = REAL;
+						break;
+						case BOOL:
+						    printf("Error: bad operand types for binary operator \n");
+							exit(1);
+						break;
+
+					}
+			 break;
+			 case BOOL:
+
+					printf("Error: bad operand types for binary operator \n");
+				    exit(1);
+
+			 break;
+
+
+		 }
+
+
+	     $$=MkNode(astMulExpr,NULL,$1,$2,$3,NULL);
+         p->lvalue = 0;
+	     push_vs(p);
+}
+     | factor { $$=$1;}
+     ;
+
+mulop
+     :'*' {  $$=MkNode(astMulOp,NULL,NULL,NULL,NULL,NULL);}
+     |'/' {  $$=MkNode(astDivOp,NULL,NULL,NULL,NULL,NULL);}
+	 |'%' {  $$=MkNode(astModOp,NULL,NULL,NULL,NULL,NULL);}
+     ;
+
+factor
+     : incdec { $$= $1; }
+	 |'('expr')' { $$=$2;}
+     | location { $$=$1;}
+     | DEC_CONST {
+          p1=new_symbol("");
+          p1->typos=INT;
+          p1->sclass=CONSTANT;
+          p1->lvalue=0;
+          p1->timi=atoi($1);
+          p1->has_timi=CONST_VAL;
+          push_vs(p1);
+	      $$ = MkNode(astDeConst,p1,NULL,NULL,NULL,NULL);
+         }
+
+	 | REAL_DEC_CONST {
+          p1=new_symbol("");
+          p1->typos=REAL;
+          p1->sclass=CONSTANT;
+          p1->lvalue=0;
+          p1->dtimi=atof($1);
+          p1->has_timi=CONST_VAL;
+          push_vs(p1);
+	      $$ = MkNode(astRealDeConst,p1,NULL,NULL,NULL,NULL);
+         }
+     | TRUE {
+	      p1 = new_symbol("");
+          p1->sclass=CONSTANT;
+		  p1->typos = BOOL;
+          p1->lvalue=0;
+          p1->timi=1;
+          p1->has_timi=CONST_VAL;
+	      push_vs(p1);
+	      $$ = MkNode(astTrue,p1,NULL,NULL,NULL,NULL);
+       }
+     | FALSE {
+	      p1 = new_symbol("");
+          p1->sclass=CONSTANT;
+		  p1->typos = BOOL;
+          p1->lvalue=0;
+          p1->timi=0;
+          p1->has_timi=CONST_VAL;
+	      push_vs(p1);
+          $$ = MkNode(astFalse,p1,NULL,NULL,NULL,NULL);
+       }
+     | method '('actuals')' {
+
+		  p2 = pop_vs();
+		  p1 = pop_vs();
+
+		  strcpy(METHOD_NAME_TEMP,"");
+
+	      while(strcmp(p1->name,"259") == 0 || strcmp(p1->name,"274") == 0 || strcmp(p1->name,"276") == 0 ){
+
+			  strcat(METHOD_NAME_TEMP,p1->name);
+			  p1 = pop_vs();
+		  }
+
+
+		  strcpy(METHOD_NAME,p1->name);
+		  strcat(METHOD_NAME,METHOD_NAME_TEMP);
+		  p3 = new_symbol(METHOD_NAME);
+
+		  strcpy(METHOD_NAME,"");
+		  strcpy(METHOD_NAME_TEMP,"");
+
+		  p = findsymb(p3->name,1);
+
+		  if(p == NULL){
+             printf("Error: '%s' undeclared method",p3->name);
+			 exit(1);
+		    }
+		  //printf("%s\n",p->name);
+		 // printf("%d\n",numOfArguments);
+
+		 /* if(p->dcl_ptr->num_params != numOfArguments){
+
+			  printf("Error: The number of arguments must match");
+			  exit(1);
+		  }
+		  */
+
+          $$ = MkNode(astMethodCall,p,$1,$3,NULL,NULL);
+ 	      push_vs(p);
+
+		  //numOfArguments =0;
+	}
+
+     | '-' DEC_CONST {
+          p1=new_symbol("");
+          p1->typos=INT;
+          p1->sclass=CONSTANT;
+          p1->lvalue=0;
+          p1->timi=-atoi($2);
+          p1->has_timi=CONST_VAL;
+          push_vs(p1);
+	      $$ = MkNode(astDeConst,p1,NULL,NULL,NULL,NULL);
+        }
+	 | '-' REAL_DEC_CONST {
+          p1=new_symbol("");
+          p1->typos=REAL;
+          p1->sclass=CONSTANT;
+          p1->lvalue=0;
+          p1->dtimi= -atof($1);
+          p1->has_timi=CONST_VAL;
+          push_vs(p1);
+	      $$ = MkNode(astRealDeConst,p1,NULL,NULL,NULL,NULL);
+         }
+     ;
+
+incdec
+	 : location INC {
+
+		  p1 = pop_vs();
+
+		 if(p1->typos != INT) {
+
+			  printf("Error: Only integers you can increase by one\n");
+			  exit(1);
+		  }
+
+		 push_vs(p1);
+
+		 //here you should check if location is integer
+		 $$ = MkNode(astIncreaseAfter,NULL,$1,NULL,NULL,NULL);
+
+	 }
+	 | INC location {
+
+		 p2 = pop_vs();
+
+		 if(p2->typos != INT) {
+
+			  printf("Error: Only integers you can increase by one\n");
+			  exit(1);
+		  }
+
+		 push_vs(p2);
+
+		 //here you should check if location is integer
+		 $$ = MkNode(astIncreaseBefore,NULL,$2,NULL,NULL,NULL);
+
+	 }
+	 | location DEC {
+
+		 p1 = pop_vs();
+
+		 if(p1->typos != INT) {
+
+			  printf("Error: Only integers you can decrease by one\n");
+			  exit(1);
+		  }
+
+		 push_vs(p1);
+
+		  //here you should check if location is integer
+		 $$ = MkNode(astDecreaseAfter,NULL,$1,NULL,NULL,NULL);
+
+	 }
+	 | DEC location {
+
+		  p2 = pop_vs();
+
+		  if(p2->typos != INT) {
+
+			  printf("Error: Only integers you can decrease by one\n");
+			  exit(1);
+		  }
+
+		  push_vs(p2);
+
+		  //here you should check if location is integer
+		 $$ = MkNode(astDecreaseBefore,NULL,$2,NULL,NULL,NULL);
+
+	 }
+	 ;
+
+actuals
+     : args expr {
+	  p2 = pop_vs();
+
+	  //numOfArguments++;
+
+	 sprintf(METHOD_NAME_PARS,"%d",p2->typos);
+	 p1 = new_symbol(METHOD_NAME_PARS);
+	 p1->typos = p2->typos;
+
+	 push_vs(p1);
+
+	 push_vs(NULL);
+
+	  $$=MkNode(astActuals,NULL,$1,$2,NULL,NULL);}
+     | /* EMPTY */ { $$=MkNode(astActualsEmpty,NULL,NULL,NULL,NULL,NULL); push_vs(NULL);}
+     ;
+
+args
+     : args expr',' {
+
+		p2 = pop_vs();
+		//numOfArguments++;
+
+		sprintf(METHOD_NAME_PARS,"%d",p2->typos);
+		 p1 = new_symbol(METHOD_NAME_PARS);
+	     p1->typos = p2->typos;
+
+	 push_vs(p1);
+
+		$$=MkNode(astArgsSeq,NULL,$1,$2,NULL,NULL);}
+     | /* EMPTY */ { $$=MkNode(astArgsEmpty,NULL,NULL,NULL,NULL,NULL);}
+     ;
+
+
+%%
+
+
+
+void Init_Hash_Table(void)
+{  int i;
+
+   for(i=0; i<SYM_TABLE_SIZE; i++)
+      ht.table[i]=NULL;
+}
+
+
+void Init_Array_Hash_Table(void)
+{  int i,j;
+
+   for(i=0; i<MAX_SYM_TABLES; i++){
+        for(j=0; j<SYM_TABLE_SIZE; j++){
+            arr_st[i].table[j]=NULL;
+          }
+     }
+}
+
+
+void push_wh(symbol *p)
+{
+   whiles[++TopOfWhile]=p;
+
+}
+
+void push_rt(symbol *p)
+{
+   returns[++TopOfRt]=p;
+}
+
+symbol *pop_rt(void)
+{
+
+   return(returns[TopOfRt--]);
+}
+
+
+
+void push_vs(symbol *p)
+{
+   vs[++TopOfStack]=p;
+}
+
+symbol* see_wh()
+{
+   return whiles[TopOfWhile];
+}
+
+symbol *pop_wh(void)
+{
+	if(TopOfWhile<0) return(NULL);
+	symbol * temp;
+	temp = whiles[TopOfWhile--];
+	whiles[TopOfWhile+1] = NULL;
+
+   return(temp);
+}
+
+
+symbol *pop_vs(void)
+{
+
+   return(vs[TopOfStack--]);
+}
+
+symbol *new_symbol(char *name){
+
+   symbol *symbp;
+   symbp=(symbol *)malloc(sizeof(symbol));
+   memset(symbp,0,sizeof(symbol));
+   strncpy(symbp->name,name,(strlen(name)>NAME_MAX)?NAME_MAX:strlen(name));
+
+
+   symbp->timi=0;
+   symbp->lvalue=1;
+   symbp->arg = 0;
+   symbp->mht = NULL;
+   symbp->has_timi = 0;
+   symbp->dcl_ptr = NULL;
+   symbp->NextSymbol=NULL;
+   symbp->PrevSymbol=NULL;
+   return(symbp);
+}
+
+void add_method_dcl(symbol *symbp)
+{  dcl *p,*q;
+
+   q=(dcl *)malloc(sizeof(dcl));
+   q->dcl_type=METHOD;
+   q->num_params=numOfParams;
+   p=symbp->dcl_ptr;
+   if(!p)
+      symbp->dcl_ptr=q;
+
+
+}
+
+void add_array_dcl(symbol *symbp, int size)
+{  dcl *p,*q;
+
+   q=(dcl *)malloc(sizeof(dcl));
+   q->dcl_type=ARRAY;
+   q->num_params=size;
+   p=symbp->dcl_ptr;
+   if(!p)
+      symbp->dcl_ptr=q;
+
+
+}
+
+int is_integral(symbol *s){
+
+	if(s){
+		if(s->typos == INT)
+			return(1);
+
+
+	}
+
+	return(0);
+
+}
+
+int set_class_types(symbol *symbp, int class_tipos)
+{
+   switch(class_tipos)
+   {
+      case INT:
+         if(symbp->typos) return(1);
+         symbp->typos=class_tipos;
+      break;
+	  case REAL:
+         if(symbp->typos) return(1);
+         symbp->typos=class_tipos;
+      break;
+	  case BOOL:
+         if(symbp->typos) return(1);
+         symbp->typos=class_tipos;
+      break;
+      case METHOD:
+		 add_method_dcl(symbp);
+         break;
+   }
+   return(0);
+}
+
+
+void Init_while_stack(){
+	int i =0;
+	for(;i<30; i++)
+		whiles[i] = NULL;
+
+}
+
+
+
+void copy_attributes(symbol *dst, symbol *src)
+{  symbol *p;
+   int ret_v;
+
+   if(src)
+   {
+     p=dst;
+     if(src->typos)
+         {
+            ret_v=set_class_types(p,src->typos);
+            if(ret_v)
+            {
+               printf("One type permitted\n");
+               exit(1);
+            }
+         }
+      }
+
+}
+
+
+
+int mkkey(char *s)
+{  char *p;
+   int athr=0;
+
+   for(p=s; *p; p++) athr=athr+(*p);
+   return (athr % SYM_TABLE_SIZE);
+}
+
+void addsymb(symbol *symbp, int gl)
+{  int i;
+   symbol *p;
+
+    if(topOfSt == MAX_SYM_TABLES) {
+			printf("Out of memory :( , the number of methods must be less than %d",MAX_SYM_TABLES); //if the number of methods is greater than MAX_SYM_TABLES constant
+			exit(1);
+			}
+
+ if(gl ==1) {
+   i=mkkey(symbp->name);
+   p=ht.table[i];
+   symbp->NextSymbol=p;
+   symbp->PrevSymbol=NULL;
+   symbp->mht= &arr_st[topOfSt];
+   if(p) p->PrevSymbol=symbp;
+   ht.table[i]=symbp;
+   ht.numbsymbols++;
+ }else {
+
+   i=mkkey(symbp->name);
+   p=arr_st[topOfSt].table[i];
+   symbp->NextSymbol=p;
+   symbp->PrevSymbol=NULL;
+   if(p) p->PrevSymbol=symbp;
+   arr_st[topOfSt].table[i]=symbp;
+   arr_st[topOfSt].numbsymbols++;
+
+}
+
+}
+
+symbol *findsymb(char *onoma, int gl)
+{  int i;
+   symbol *p;
+
+   if(gl == 1){
+   i=mkkey(onoma);
+   p=ht.table[i];
+
+   while(p && (strcmp(p->name,onoma) !=0)){
+      p=p->NextSymbol;
+}
+}else {
+    i=mkkey(onoma);
+	 if(topOfSt == MAX_SYM_TABLES) {
+			printf("Out of memory :( , the number of methods must be less than %d",MAX_SYM_TABLES); //if the number of methods is greater than MAX_SYM_TABLES constant
+			exit(1);
+			}
+    p=arr_st[topOfSt].table[i];
+    while(p && (strcmp(p->name,onoma) !=0))
+       p=p->NextSymbol;
+
+
+   }
+ return(p);
+}
+
+void add_symbols_to_table(symbol *symbp, int gl)
+{
+      symbol *exists;
+      exists=findsymb(symbp->name,gl);
+
+      if( !exists )
+      {
+         addsymb(symbp,gl);
+
+      }
+           /* -- exists -- */
+      else
+      {
+         printf("Error: '%s' redeclaration\n",symbp->name);
+         exit(1);
+      }
+
+}
+
+void discard_symbol(symbol *symbp)
+{
+   if(symbp)
+   {
+
+
+      symbp->PrevSymbol->NextSymbol = symbp->NextSymbol;
+      symbp->NextSymbol->PrevSymbol = symbp->PrevSymbol;
+	  symbp->PrevSymbol = NULL;
+	  symbp->NextSymbol = NULL;
+
+   }
+}
+
+void check_assignment(symbol *opnd1, symbol *opnd2)
+{  symbol *p;
+
+   if( !(opnd1->lvalue))
+   {
+      printf("Error: The left operand must be an lvalue (modifiable)\n");
+      exit(1);
+   }
+
+   return;
+}
+
+
+void copy_value(symbol *dst, symbol *src)
+{
+   if(src->has_timi){
+
+      if(src->has_timi == CONST_VAL){
+
+		 switch (dst->typos){
+			 case INT:
+
+				dst->timi = src->timi;
+				dst->has_timi=src->has_timi;
+
+			 break;
+			 case REAL:
+
+				dst->dtimi = src->dtimi;
+				dst->has_timi=src->has_timi;
+
+			 break;
+			 case BOOL:
+
+				dst->timi = src->timi;
+				dst->has_timi=src->has_timi;
+
+			 break;
+
+		 }
+
+       }
+   }
+}
+
+void copy_symbol(symbol *dst, symbol *src)
+{
+   if( src && dst){
+		dst->typos=src->typos;
+		copy_value(dst,src);
+   }
+
+}
+
+AstNode *MkNode(int tipos,symbol *sn,
+              AstNode *z0,AstNode *z1,AstNode *z2,AstNode *z3)
+{  AstNode *p;
+
+   p=(AstNode *)malloc(sizeof(AstNode));
+   if(!p)
+   {
+      printf("Out of memory\n");
+      exit(1);
+   }
+   else
+   {
+      p->NodeType=tipos;
+      p->SymbolNode=sn;
+      p->pAstNode[0]=z0;
+      p->pAstNode[1]=z1;
+      p->pAstNode[2]=z2;
+      p->pAstNode[3]=z3;
+      return(p);
+   }
+}
+
+void check_while(symbol *pexp, symbol *pst)
+{
+   if(pexp->typos != INT)
+   {
+      printf("Error: The expression must have scalar type\n");
+      exit(1);
+   }
+
+}
+
+
+
+void check_ifelse(symbol *pexp, symbol *pst1, symbol *pst2)
+{
+
+   if( !is_integral(pexp))
+   {
+      printf("Error: The expression must have scalar type\n");
+      exit(1);
+   }
+  // discard_symbol(pexp);
+  // discard_symbol(pst1);
+   //discard_symbol(pst2);
+}
+
+void preOrder(AstNode* p, int indent){
+    if(p != NULL) {
+
+		if (indent) {
+			int i;
+            for (i=0; i<=indent; i++){
+				printf(" ");
+			}
+        }
+        printf("%s\n", p->NodeType);
+        if(p->pAstNode[0]) preOrder(p->pAstNode[0], indent+8);
+        if(p->pAstNode[1]) preOrder(p->pAstNode[1], indent+8);
+        if(p->pAstNode[2]) preOrder(p->pAstNode[2], indent+8);
+
+    }
+}
+
+
+
+void Show_Hash_Table(void)
+{
+	int i,j;
+
+	printf("\n------------- METHODS ---------\n");
+	for(i=0; i<SYM_TABLE_SIZE; i++){
+
+		printf("%s ",ht.table[i]) ;
+	}
+	printf("\n------------- VARIABLES ---------\n");
+
+	for (i=0; i<MAX_SYM_TABLES ;i++){
+		for (j=0; j<SYM_TABLE_SIZE; j++){
+			printf("%s ",arr_st[i].table[j]) ;
+		}
+		printf("\n");
+	}
+
+
+}
+
+
+
+
+
+symbol *check_logic_op(symbol *opnd1, symbol *opnd2)
+{  symbol *p;
+
+   if(( !is_integral(opnd1) ) || ( !is_integral(opnd2) ))
+   {
+      printf("Error: Both operands must be integers\n");
+
+      exit(1);
+   }
+   p=new_symbol("");
+   p->typos=INT;
+   p->lvalue=0;
+   p->has_timi=0;
+
+   if((opnd1->has_timi==CONST_VAL) && (opnd1->has_timi==CONST_VAL))
+         p->has_timi=CONST_VAL;
+
+   if((opnd1->sclass==CONSTANT) && (opnd2->sclass==CONSTANT))
+      p->sclass=CONSTANT;
+
+   return(p);
+}
+
+
+symbol *check_muldiv_arithm_op(symbol *opnd1, symbol *opnd2)
+{  symbol *p;
+
+   if(( !is_integral(opnd1) ) || ( !is_integral(opnd2) ))
+   {
+      printf("Error: Both operands must be integers\n");
+      exit(1);
+   }
+   p=new_symbol("");
+   p->typos=INT;
+   p->lvalue=0;
+   p->has_timi=0;
+   if((opnd1->has_timi==CONST_VAL) && (opnd1->has_timi==CONST_VAL))
+         p->has_timi=CONST_VAL;
+
+   if((opnd1->sclass==CONSTANT) && (opnd2->sclass==CONSTANT))
+      p->sclass=CONSTANT;
+
+   return(p);
+}
+
+int isSuperType(int type1, int type2){
+
+	switch(type1){
+
+		case INT:
+			switch(type2){
+
+				case INT:
+					 return(1);
+				break;
+				case REAL:
+					 return(0);
+				break;
+				case BOOL:
+					 return(0);
+				break;
+			}
+		break;
+		case REAL:
+			switch(type2){
+
+				case INT:
+					 return(1);
+				break;
+				case REAL:
+					 return(1);
+				break;
+				case BOOL:
+					 return(0);
+				break;
+
+			}
+		break;
+		case BOOL:
+			switch(type2){
+
+					case INT:
+						 return(0);
+					break;
+					case REAL:
+						 return(0);
+					break;
+					case BOOL:
+						 return(1);
+					break;
+
+				}
+		break;
+
+
+	}
+
+
+}
+
+
+symbol *check_addsub_arithm_op(symbol *opnd1, symbol *opnd2)
+{  symbol *p;
+   dcl *d1, *d2;
+
+   p=new_symbol("");
+
+   if(is_integral(opnd1) && is_integral(opnd2))
+   {
+      p->typos=opnd1->typos;
+	 /* if(opnd1->has_timi)
+		{
+			if(opnd1->has_timi == CONST_VAL)
+				p->timi = opnd1->timi;
+			p->has_timi=opnd1->has_timi;
+		}*/
+	   if((opnd1->has_timi==CONST_VAL) && (opnd1->has_timi==CONST_VAL))
+         p->has_timi=CONST_VAL;
+
+      if((opnd1->sclass==CONSTANT) && (opnd2->sclass==CONSTANT))
+         p->sclass=CONSTANT;
+   }
+   else
+   {
+      printf("Error: Both operands must be integers\n");
+      exit(1);
+   }
+
+   p->lvalue=0;
+
+
+   return(p);
+}
+
+
+void yyerror(char *s)
+{
+   fputs(s,stderr); putc('\n',stderr);
+}
