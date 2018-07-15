@@ -26,7 +26,9 @@ int main(int argc, char* argv[]){
 		#ifdef __linux__
 		sprintf(str,"rm -r -f %s",argv[2]);
 		#elif _WIN32
-		sprintf(str,"rmdir %s",argv[2]);
+		sprintf(str,"del /f /s /q %s 1>nul",argv[2]);
+		system(str);
+		sprintf(str,"rmdir /s /q %s",argv[2]);
 		#endif
 		system(str);
 		
