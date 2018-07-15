@@ -240,3 +240,14 @@ This command will execute the code before `if` , if the expression after `if` is
    y++ unless x>5
 ```
 This command will execute the code before `unless` , if the expression after `unless` is false.
+
+# What is Colibri?
+
+<p align="center">
+  <img src="https://github.com/tasosxak/nectar-lang/blob/master/colibri_plus_nectar.jpg/?style=centerme">
+</p>
+
+Colibri is a virtual machine that reads line per line the bytecode and executes it. This process consists of three phases.
+* **Load**: In this phase, Colibri-VM pushes the bytecode into the stack.
+* **Compilation**: In this phase, Colibri-VM compiles the bytecode (creates the classes, the labels,the variables etc)
+* **Execution**: In this phase, Colibri-VM executes the bytecode, starting from main function.
