@@ -38,7 +38,7 @@ int main(int argc, char* argv[]){
 		system(str);
 		
 		#ifdef __linux__
-		sprintf(str,"mkdir %s//src",argv[2]);
+		sprintf(str,"mkdir %s/src",argv[2]);
 		#elif _WIN32
 		sprintf(str,"mkdir %s\\src",argv[2]);
 		#endif
