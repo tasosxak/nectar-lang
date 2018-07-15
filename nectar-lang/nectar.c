@@ -26,9 +26,9 @@ int main(int argc, char* argv[]){
 		#ifdef __linux__
 		sprintf(str,"rm -r -f %s",argv[2]);
 		#elif _WIN32
-		sprintf(str,"del /f /s /q %s 1>nul",argv[2]);
+		sprintf(str,"del /f /s /q %s > nul 2> nul",argv[2]);
 		system(str);
-		sprintf(str,"rmdir /s /q %s",argv[2]);
+		sprintf(str,"rmdir /s /q %s > nul 2> nul",argv[2]);
 		#endif
 		system(str);
 		
@@ -94,14 +94,14 @@ int main(int argc, char* argv[]){
 			#ifdef __linux__
 			sprintf(str,"mv final.nrf %s/",argv[2]);
 			#elif _WIN32
-			sprintf(str,"move final.nrf %s",argv[2]);
+			sprintf(str,"move final.nrf %s > nul 2> nul",argv[2]);
 			#endif
 			system(str);
 		
 			#ifdef __linux__
 			sprintf(str,"mv  %s.cex  %s/exec/",argv[2],argv[2]);
 			#elif _WIN32
-			sprintf(str,"move  %s.cex  %s\\exec",argv[2],argv[2]);
+			sprintf(str,"move  %s.cex  %s\\exec > nul 2> nul",argv[2],argv[2]);
 			#endif
 			system(str);
 	}
