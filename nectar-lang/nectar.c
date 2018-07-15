@@ -65,20 +65,48 @@ int main(int argc, char* argv[]){
 		
 			#ifdef __linux__
 			sprintf(str,"./prenectar %s/src/%s.nr %s/src/",argv[2],argv[2],argv[2]);
+			#elseif _WIN32
+			sprintf(str,"prenectar %s/src/%s.nr %s/src/",argv[2],argv[2],argv[2]);
+			#endif
 			error = system(str);
 			if(error) exit(1);
+		
+			#ifdef __linux__
 			sprintf(str,"./nectarc final.nrf");
-		             error = system(str);
+			#elseif _WIN32
+			sprintf(str,"nectarc final.nrf");
+			#endif
+			error = system(str);
+		
+			#ifdef __linux__
 			sprintf(str,"mv final.cex %s.cex",argv[2]);
-		             error = system(str);
+			#elseif _WIN32
+			sprintf(str,"rename final.cex %s.cex",argv[2]);
+			#endif
+		        error = system(str);
 			if(error) exit(1);
+			
+			#ifdef __linux__
 			sprintf(str,"mv final.nrf %s/",argv[2]);
+			#elseif _WIN32
+			sprintf(str,"move final.nrf %s/",argv[2]);
+			#endif
 			system(str);
+		
+			#ifdef __linux__
 			sprintf(str,"mv  %s.cex  %s/exec/",argv[2],argv[2]);
+			#elseif _WIN32
+			sprintf(str,"move  %s.cex  %s/exec/",argv[2],argv[2]);
+			#endif
 			system(str);
 	}
 	else if(strcmp(argv[1],"run") == 0){
+		
+			#ifdef __linux__
 			sprintf(str,"./colibri   %s/exec/%s.cex",argv[2],argv[2]);
+			#elseif _WIN32
+			sprintf(str,"colibri   %s/exec/%s.cex",argv[2],argv[2]);
+			#endif
 			system(str);
 	}
 
