@@ -4092,7 +4092,7 @@ void ProcessAddExpr(AstNode *p, int lev, int lvalue, int leftChild){
 
                          fprintf(text,"iconst %d\n",lhs->index);
                          fprintf(text,"iload_ %d\n",rhs->index);
-                         fprintf(text,"iadd\n");
+                         fprintf(text,"isub\n");
 
                         }
                         else if(rhs->sclass == CONSTANT){

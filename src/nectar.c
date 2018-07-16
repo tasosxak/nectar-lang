@@ -69,7 +69,7 @@ int main(int argc, char* argv[]){
 	else if(strcmp(argv[1],"build") == 0){
 		
 			#ifdef __linux__
-			sprintf(str,"./prenectar %s/src/%s.nr %s/src/",argv[2],argv[2],argv[2]);
+			sprintf(str,"prenectar %s/src/%s.nr %s/src/",argv[2],argv[2],argv[2]);
 			#elif _WIN32
 			sprintf(str,"prenectar %s\\src\\%s.nr %s\\src\\",argv[2],argv[2],argv[2]);
 			#endif
@@ -77,7 +77,7 @@ int main(int argc, char* argv[]){
 			if(error) exit(1);
 		
 			#ifdef __linux__
-			sprintf(str,"./nectarc final.nrf");
+			sprintf(str,"nectarc final.nrf");
 			#elif _WIN32
 			sprintf(str,"nectarc final.nrf");
 			#endif
@@ -108,7 +108,7 @@ int main(int argc, char* argv[]){
 	else if(strcmp(argv[1],"run") == 0){
 		
 			#ifdef __linux__
-			sprintf(str,"./colibri   %s/exec/%s.cex",argv[2],argv[2]);
+			sprintf(str,"colibri   %s/exec/%s.cex",argv[2],argv[2]);
 			#elif _WIN32
 			sprintf(str,"colibri   %s\\exec\\%s.cex",argv[2],argv[2]);
 			#endif
