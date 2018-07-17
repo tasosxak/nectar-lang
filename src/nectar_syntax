@@ -63,7 +63,7 @@ AstNode *TreeRoot;
 %token <yint> FALSE TRUE INT RETURN IF ELSE WHILE BREAK PRINT READ PRINTLN TIMES USE UNLESS NOT AND OR REAL PUTS BOOL FUNC RIGHTARROW CLASS PRIVATE PUBLIC ABSTRACT METH VAR
 %token <ystr> DEC_CONST LITERAL REAL_DEC_CONST
 %token <ystr> '(' ')' '{' '}'
-%token <ystr> '*' '/' '+' '-' '=' ';' ','
+%token <ystr> '*' '/' '+' '-' '=' ';' ',' IDIV
 %token <ystr> GE '>' LE '<' NE EQ
 %token <ystr> ID
 %token <ystr> INC DEC ADDASSIGN SUBASSIGN
@@ -1717,7 +1717,8 @@ term
 mulop
      :'*' {  $$=MkNode(astMulOp,NULL,NULL,NULL,NULL,NULL);}
      |'/' {  $$=MkNode(astDivOp,NULL,NULL,NULL,NULL,NULL);}
-	 |'%' {  $$=MkNode(astModOp,NULL,NULL,NULL,NULL,NULL);}
+     |IDIV {  $$=MkNode(astIdivOp,NULL,NULL,NULL,NULL,NULL);}
+	   |'%' {  $$=MkNode(astModOp,NULL,NULL,NULL,NULL,NULL);}
      ;
 
 factor

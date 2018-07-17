@@ -26,7 +26,7 @@ int id_or_keyword(char *name);
                                return(REAL_DEC_CONST);
                      }
 
-"//".*              {
+"#".*              {
                           //printf("COMMENT: %s\n",yytext);
                       }
 
@@ -49,6 +49,11 @@ int id_or_keyword(char *name);
                                strcpy(yylval.ystr,yytext);
                                return('/');
                             }
+"//"                        {
+                                //printf("%s\n",yytext);
+                                strcpy(yylval.ystr,yytext);
+                                return(IDIV);
+                          }
 
 "%"                        {
                                //printf("%s\n",yytext);

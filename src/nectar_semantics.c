@@ -4539,7 +4539,7 @@ void ProcessMulExpr(AstNode *p, int lev, int lvalue, int leftChild)
       break;
      }
   }
-   else if (p->pAstNode[1]->NodeType == astDivOp || p->pAstNode[1]->NodeType == astModOp) {
+   else if (p->pAstNode[1]->NodeType == astDivOp || p->pAstNode[1]->NodeType == astIdivOp ) {
 
      switch(lhs->sclass)
       {
@@ -4553,29 +4553,49 @@ void ProcessMulExpr(AstNode *p, int lev, int lvalue, int leftChild)
 
                  case INT:
 
-                      sn->typos=INT;
-
                       if(rhs->sclass == MEMORY)
                       {
 
                          fprintf(text,"iload_ %d\n",lhs->index);
+                         if(p->pAstNode[1]->NodeType == astDivOp)
+                            fprintf(text,"i2d\n");
+
                          fprintf(text,"iload_ %d\n",rhs->index);
-                         fprintf(text,"idiv\n");
+                         if(p->pAstNode[1]->NodeType == astDivOp)
+                            fprintf(text,"i2d\n");
+
+                         if(p->pAstNode[1]->NodeType == astDivOp){
+                               fprintf(text,"ddiv\n");
+                               sn->typos= REAL;
+                        }
+                         else{
+                               fprintf(text,"idiv\n");
+                               sn->typos= INT;
+                        }
 
                       }
                       else if(rhs->sclass == CONSTANT)
                       {
 
                         fprintf(text,"iload_ %d\n",lhs->index);
-                        fprintf(text,"iconst %d\n",rhs->timi);
-                        fprintf(text,"idiv\n");
+                        if(p->pAstNode[1]->NodeType == astDivOp){
+                           fprintf(text,"i2d\n");
+                           fprintf(text,"dconst %d\n",rhs->timi);
+                           fprintf(text,"ddiv\n");
+                           sn->typos= REAL;
+                        }
+                        else {
+                           fprintf(text,"iconst %d\n",rhs->timi);
+                           fprintf(text,"idiv\n");
+                           sn->typos= INT;
+                        }
+
 
 
                       }
                  break;
 
                  case REAL:
-                         sn->typos=REAL;
 
                           if(rhs->sclass == CONSTANT)
                           {
@@ -4585,6 +4605,13 @@ void ProcessMulExpr(AstNode *p, int lev, int lvalue, int leftChild)
                             fprintf(text,"dconst %lf\n",rhs->dtimi);
                             fprintf(text,"ddiv\n");
 
+                            if(p->pAstNode[1]->NodeType == astIdivOp){
+                                fprintf(text,"d2i\n");
+                                sn->typos=INT;
+                            }
+                            else
+                               sn->typos=REAL;
+
                           }else if(rhs->sclass == MEMORY){
 
 
@@ -4592,6 +4619,14 @@ void ProcessMulExpr(AstNode *p, int lev, int lvalue, int leftChild)
                             fprintf(text,"i2d\n");
                             fprintf(text,"dload_ %d\n",rhs->index);
                             fprintf(text,"ddiv\n");
+
+                            if(p->pAstNode[1]->NodeType == astIdivOp){
+                              fprintf(text,"d2i\n");
+                              sn->typos=INT;
+                            }
+                            else
+                              sn->typos=REAL;
+
 
                           }
 
@@ -4603,14 +4638,19 @@ void ProcessMulExpr(AstNode *p, int lev, int lvalue, int leftChild)
                switch(rhs->typos){
 
                      case INT:
-                          sn->typos=REAL;
 
                           if(rhs->sclass == CONSTANT)
                           {
-
                             fprintf(text,"dload_ %d\n",lhs->index);
                             fprintf(text,"dconst %d\n",rhs->timi);
                             fprintf(text,"ddiv\n");
+
+                            if(p->pAstNode[1]->NodeType == astIdivOp){
+                              fprintf(text,"d2i\n");
+                              sn->typos=INT;
+                            }
+                            else
+                              sn->typos=REAL;
 
                           }else if(rhs->sclass == MEMORY){
 
@@ -4620,12 +4660,16 @@ void ProcessMulExpr(AstNode *p, int lev, int lvalue, int leftChild)
                             fprintf(text,"i2d\n");
                             fprintf(text,"ddiv\n");
 
+                            if(p->pAstNode[1]->NodeType == astIdivOp){
+                              fprintf(text,"d2i\n");
+                              sn->typos=INT;
+                            }
+                            else
+                              sn->typos=REAL;
                           }
                      break;
 
                      case REAL:
-
-                             sn->typos=REAL;
 
                              if(rhs->sclass == CONSTANT) {
 
@@ -4633,12 +4677,26 @@ void ProcessMulExpr(AstNode *p, int lev, int lvalue, int leftChild)
                                fprintf(text,"dconst %lf\n",rhs->dtimi);
                                fprintf(text,"ddiv\n");
 
+                               if(p->pAstNode[1]->NodeType == astIdivOp){
+                                 fprintf(text,"d2i\n");
+                                 sn->typos=INT;
+                               }
+                               else
+                                  sn->typos=REAL;
+
                             }else if(rhs->sclass == MEMORY){
 
 
                                fprintf(text,"dload_ %d\n",lhs->index);
                                fprintf(text,"dload_ %d\n",rhs->index);
                                fprintf(text,"ddiv\n");
+
+                               if(p->pAstNode[1]->NodeType == astIdivOp){
+                                 fprintf(text,"d2i\n");
+                                 sn->typos=INT;
+                               }
+                               else
+                                  sn->typos=REAL;
 
                             }
                      break;
@@ -4656,42 +4714,79 @@ void ProcessMulExpr(AstNode *p, int lev, int lvalue, int leftChild)
 
                  case INT:
 
-                      sn->typos=INT;
-
                       if(rhs->sclass == MEMORY)
                       {
+                         if(p->pAstNode[1]->NodeType == astDivOp)
+                            fprintf(text,"i2d\n");
 
                          fprintf(text,"iload_ %d\n",rhs->index);
-                         fprintf(text,"idiv\n");
+
+                         if(p->pAstNode[1]->NodeType == astDivOp)
+                            fprintf(text,"i2d\n");
+
+                         if(p->pAstNode[1]->NodeType == astDivOp){
+                               fprintf(text,"ddiv\n");
+                               sn->typos= REAL;
+                          }
+                         else{
+                            fprintf(text,"idiv\n");
+                            sn->typos= INT;
+                          }
 
                       }
                       else if(rhs->sclass == CONSTANT)
                       {
 
+                        if(p->pAstNode[1]->NodeType == astDivOp)
+                           fprintf(text,"i2d\n");
 
-                        fprintf(text,"iconst %d\n",rhs->timi);
-                        fprintf(text,"idiv\n");
+                        if(p->pAstNode[1]->NodeType == astDivOp)
+                          fprintf(text,"dconst %d\n",rhs->timi);
+                        else
+                          fprintf(text,"iconst %d\n",rhs->timi);
+
+                        if(p->pAstNode[1]->NodeType == astDivOp){
+                          fprintf(text,"ddiv\n");
+                          sn->typos= REAL;
+                        }
+                        else{
+                          fprintf(text,"idiv\n");
+                          sn->typos= INT;
+                        }
+
 
 
                       }
                  break;
 
                  case REAL:
-                         sn->typos=REAL;
 
                           if(rhs->sclass == CONSTANT)
                           {
 
-
+                            fprintf(text,"i2d\n");
                             fprintf(text,"dconst %lf\n",rhs->dtimi);
                             fprintf(text,"ddiv\n");
 
+                            if(p->pAstNode[1]->NodeType == astIdivOp){
+                              fprintf(text,"d2i\n");
+                              sn->typos=INT;
+                            }
+                            else
+                              sn->typos=REAL;
+
                           }else if(rhs->sclass == MEMORY){
 
-
-
+                            fprintf(text,"i2d\n");
                             fprintf(text,"dload_ %d\n",rhs->index);
                             fprintf(text,"ddiv\n");
+
+                            if(p->pAstNode[1]->NodeType == astIdivOp){
+                              fprintf(text,"d2i\n");
+                              sn->typos=INT;
+                            }
+                            else
+                              sn->typos=REAL;
 
                           }
 
@@ -4703,29 +4798,37 @@ void ProcessMulExpr(AstNode *p, int lev, int lvalue, int leftChild)
                switch(rhs->typos){
 
                      case INT:
-                          sn->typos=REAL;
 
                           if(rhs->sclass == CONSTANT)
                           {
 
-
                             fprintf(text,"dconst %d\n",rhs->timi);
                             fprintf(text,"ddiv\n");
 
+                            if(p->pAstNode[1]->NodeType == astIdivOp){
+                              fprintf(text,"d2i\n");
+                              sn->typos=INT;
+                            }
+                            else
+                              sn->typos=REAL;
+
                           }else if(rhs->sclass == MEMORY){
-
-
 
                             fprintf(text,"iload_ %d\n",rhs->index);
                             fprintf(text,"i2d\n");
                             fprintf(text,"ddiv\n");
 
+                            if(p->pAstNode[1]->NodeType == astIdivOp){
+                              fprintf(text,"d2i\n");
+                              sn->typos=INT;
+                            }
+                            else
+                              sn->typos=REAL;
+
                           }
                      break;
 
                      case REAL:
-
-                             sn->typos=REAL;
 
                              if(rhs->sclass == CONSTANT) {
 
@@ -4733,12 +4836,24 @@ void ProcessMulExpr(AstNode *p, int lev, int lvalue, int leftChild)
                                fprintf(text,"dconst %lf\n",rhs->dtimi);
                                fprintf(text,"ddiv\n");
 
+                               if(p->pAstNode[1]->NodeType == astIdivOp){
+                                 fprintf(text,"d2i\n");
+                                 sn->typos=INT;
+                               }
+                               else
+                                  sn->typos=REAL;
+
                             }else if(rhs->sclass == MEMORY){
-
-
 
                                fprintf(text,"dload_ %d\n",rhs->index);
                                fprintf(text,"ddiv\n");
+
+                               if(p->pAstNode[1]->NodeType == astIdivOp){
+                                 fprintf(text,"d2i\n");
+                                 sn->typos=INT;
+                               }
+                               else
+                                  sn->typos=REAL;
 
                             }
                      break;
@@ -4755,19 +4870,43 @@ void ProcessMulExpr(AstNode *p, int lev, int lvalue, int leftChild)
                 switch(rhs->typos){
 
                   case INT:
-                       sn->typos= INT;
 
                        if(rhs->sclass == MEMORY){
 
-                         fprintf(text,"iconst %d\n",lhs->index);
+                         if(p->pAstNode[1]->NodeType == astDivOp)
+                            fprintf(text,"dconst %d\n",lhs->index);
+                         else
+                            fprintf(text,"iconst %d\n",lhs->index);
+
                          fprintf(text,"iload_ %d\n",rhs->index);
-                         fprintf(text,"idiv\n");
+
+                         if(p->pAstNode[1]->NodeType == astDivOp)
+                            fprintf(text,"i2d\n");
+
+                        if(p->pAstNode[1]->NodeType == astDivOp){
+                            fprintf(text,"ddiv\n");
+                            sn->typos= REAL;
+                          }
+                        else{
+                           fprintf(text,"idiv\n");
+                           sn->typos= INT;
+                         }
+
+
 
                         }
                         else if(rhs->sclass == CONSTANT){
 
                           if(rhs->dtimi !=0){
-                             sn->dtimi = lhs->timi / rhs->timi;
+                             if(p->pAstNode[1]->NodeType == astDivOp){
+                                sn->dtimi = (float)lhs->timi / rhs->timi;
+                                sn->typos= REAL;
+                              }
+                             else{
+                                sn->timi = lhs->timi / rhs->timi;
+                                sn->typos= INT;
+                              }
+
                              sn->sclass=CONSTANT;
                           }else{
 
@@ -4778,7 +4917,6 @@ void ProcessMulExpr(AstNode *p, int lev, int lvalue, int leftChild)
                         }
                   break;
                   case REAL:
-                        sn->typos=REAL;
 
                         if(rhs->sclass == MEMORY){
 
@@ -4786,11 +4924,25 @@ void ProcessMulExpr(AstNode *p, int lev, int lvalue, int leftChild)
                           fprintf(text,"dload_ %d\n",rhs->index);
                           fprintf(text,"ddiv\n");
 
+                          if(p->pAstNode[1]->NodeType == astIdivOp){
+                            fprintf(text,"d2i\n");
+                            sn->typos=INT;
+                          }
+                          else
+                            sn->typos=REAL;
+
                         }
                         else if(rhs->sclass == CONSTANT){
 
                           if(rhs->dtimi !=0){
-                             sn->dtimi = lhs->timi / rhs->dtimi;
+                            if(p->pAstNode[1]->NodeType == astIdivOp){
+                              sn->timi = (int)(lhs->timi / rhs->dtimi);
+                              sn->typos=INT;
+                            }
+                            else {
+                              sn->dtimi = (lhs->timi / rhs->dtimi);
+                              sn->typos=REAL;
+                            }
                              sn->sclass=CONSTANT;
                           }else{
 
@@ -4809,7 +4961,7 @@ void ProcessMulExpr(AstNode *p, int lev, int lvalue, int leftChild)
                    switch(rhs->typos){
 
                       case INT:
-                           sn->typos= REAL;
+
 
                            if(rhs->sclass == MEMORY){
 
@@ -4818,12 +4970,26 @@ void ProcessMulExpr(AstNode *p, int lev, int lvalue, int leftChild)
                              fprintf(text,"i2d\n");
                              fprintf(text,"ddiv\n");
 
+                             if(p->pAstNode[1]->NodeType == astIdivOp){
+                               fprintf(text,"d2i\n");
+                               sn->typos=INT;
+                             }
+                             else
+                                sn->typos=REAL;
+
                             }
                             else if(rhs->sclass == CONSTANT){
 
 
                               if(rhs->dtimi !=0){
-                                 sn->dtimi = lhs->dtimi / rhs->timi;
+                                if(p->pAstNode[1]->NodeType == astIdivOp){
+                                  sn->timi = (int)(lhs->dtimi / rhs->timi);
+                                  sn->typos=INT;
+                                }
+                                else {
+                                  sn->dtimi = (lhs->dtimi / rhs->timi);
+                                  sn->typos=REAL;
+                                }
                                  sn->sclass=CONSTANT;
                               }else{
 
@@ -4834,7 +5000,7 @@ void ProcessMulExpr(AstNode *p, int lev, int lvalue, int leftChild)
                             }
                       break;
                       case REAL:
-                           sn->typos= REAL;
+
 
                            if(rhs->sclass == MEMORY){
 
@@ -4842,11 +5008,25 @@ void ProcessMulExpr(AstNode *p, int lev, int lvalue, int leftChild)
                              fprintf(text,"dload_ %d\n",rhs->index);
                              fprintf(text,"ddiv\n");
 
+                             if(p->pAstNode[1]->NodeType == astIdivOp){
+                               fprintf(text,"d2i\n");
+                               sn->typos=INT;
+                             }
+                             else
+                                sn->typos=REAL;
+
                             }
                             else if(rhs->sclass == CONSTANT){
 
                               if(rhs->dtimi !=0){
-                                 sn->dtimi = lhs->dtimi / rhs->dtimi;
+                                if(p->pAstNode[1]->NodeType == astIdivOp){
+                                  sn->timi = (int)(lhs->dtimi / rhs->dtimi);
+                                  sn->typos=INT;
+                                }
+                                else {
+                                  sn->dtimi = (lhs->dtimi / rhs->dtimi);
+                                  sn->typos=REAL;
+                                }
                                  sn->sclass=CONSTANT;
                               }else{
 
@@ -4866,6 +5046,7 @@ void ProcessMulExpr(AstNode *p, int lev, int lvalue, int leftChild)
        break;
       }
    }
+
 
 
    push_vs(sn);

@@ -125,6 +125,7 @@
 #define astFuncLast 512
 #define astFuncDef 513
 #define astPointer 514
+#define astIdivOp    515
 /* ----------------------------------------------------------- */
 /* ----- THE STRUCTURE FOR THE ABSTRACT SYNTAX TREE NODES ---- */
 /* ----------------------------------------------------------- */
