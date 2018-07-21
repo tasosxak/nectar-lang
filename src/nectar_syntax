@@ -60,7 +60,7 @@ AstNode *TreeRoot;
     struct AstNode_tag *stnode;
 }
 
-%token <yint> FALSE TRUE INT RETURN IF ELSE WHILE BREAK PRINT READ PRINTLN TIMES USE UNLESS NOT AND OR REAL PUTS BOOL FUNC RIGHTARROW CLASS PRIVATE PUBLIC ABSTRACT METH VAR
+%token <yint> FALSE TRUE INT RETURN IF ELSE WHILE BREAK TRY READ PRINTLN TIMES USE UNLESS NOT AND OR REAL PUTS BOOL FUNC RIGHTARROW CLASS PRIVATE PUBLIC ABSTRACT METH VAR STR
 %token <ystr> DEC_CONST LITERAL REAL_DEC_CONST
 %token <ystr> '(' ')' '{' '}'
 %token <ystr> '*' '/' '+' '-' '=' ';' ',' IDIV
@@ -72,7 +72,7 @@ AstNode *TreeRoot;
 %type <stnode> class bodyclass fields field attrs modifier methodef
 %type <stnode> meth func params body formals type
 %type <stnode> decls decl_list decl vars
-%type <stnode> stmts stmt block singlestmt inline
+%type <stnode> stmts stmt block singlestmt inline separator
 %type <stnode> expr logAnd_expr not_expr comp_expr
 %type <stnode> addassign subassign assign location method relop listedassign nestedassign
 %type <stnode> add_expr addop term mulop factor incdec
@@ -446,11 +446,11 @@ func
             ;
 
 params
-      : formals type ID {
+      : formals ID ':' type  {
 
 
          p2 = pop_vs();
-	       p3 = new_symbol($3);
+	       p3 = new_symbol($2);
          p3->arg = 1;
 	       copy_attributes(p3,p2);
 
@@ -465,7 +465,7 @@ params
 		     NUM_PAR ++;
 
 	       add_symbols_to_table(p3,0);
-	       $$=MkNode(astParamSeq,p3,$1,$2,NULL,NULL);
+	       $$=MkNode(astParamSeq,p3,$4,$2,NULL,NULL);
 		     numOfParams++;
          p3->index = numOfParams;
           }
@@ -474,10 +474,10 @@ params
       ;
 
 formals
-      : formals type ID ',' {
+      : formals ID ':' type ',' {
 
 	     p2 = pop_vs();
-	     p3 = new_symbol($3);
+	     p3 = new_symbol($2);
 	     p3->arg = 1;
 	     copy_attributes(p3,p2);
 
@@ -490,7 +490,7 @@ formals
 		   NUM_PAR++;
 
 	     add_symbols_to_table(p3,0);
-	     $$=MkNode(astFormalsSeq,p3,$1,$2,NULL,NULL);
+	     $$=MkNode(astFormalsSeq,p3,$4,$2,NULL,NULL);
 		   numOfParams++;
        p3->index = numOfParams;
 		 }
@@ -523,6 +523,15 @@ type
 	        push_vs(p1);
 
         }
+
+    | STR {
+
+              $$=MkNode(astStr,NULL,NULL,NULL,NULL,NULL);
+     	        p1 = new_symbol(""); //create symbol
+    	        set_class_types(p1,$1); //the type of symbol is string
+    	        push_vs(p1);
+
+            }
     | ID {
 
           $$=MkNode(astPointer,NULL,NULL,NULL,NULL,NULL);
@@ -587,7 +596,7 @@ decl
 		push_vs(p1);
 
 
-  } vars /*';'*/ {
+  } vars separator {
 
 		pop_vs();
 		$$=MkNode(astDecl,NULL,$4,$6,NULL,NULL);
@@ -632,7 +641,7 @@ decl
 		push_vs(p1);
 
 
-		} vars /*';'*/ {
+		} vars separator {
 
 		pop_vs();
 		$$=MkNode(astDecl,NULL,$4,$9,NULL,NULL);
@@ -678,7 +687,7 @@ decl
 
 		 push_vs(p1);
 
-	     } vars /*';'*/ {
+	     } vars separator {
 
 	     pop_vs();
 	     $$=MkNode(astDeclAssign,NULL,$4,$6,$8,NULL);
@@ -802,47 +811,20 @@ singlestmt
 			$$=$1;
 			push_vs(NULL);
         }
-	    | PRINT expr {
 
-		  $$=MkNode(astPrintStmt,NULL,$2,NULL,NULL,NULL);
-		  pop_vs();
-		  push_vs(NULL);
-
-	    }
-	    | PRINTLN expr {
+	    | PRINTLN inline {
 
 		  $$=MkNode(astPrintLnStmt,NULL,$2,NULL,NULL,NULL);
+		  push_vs(NULL);
+
+	    }
+
+	    | READ expr ',' location {
+
+
+		  $$=MkNode(astReadStmt,NULL,$2,$4,NULL,NULL);
 		  pop_vs();
-		  push_vs(NULL);
-
-	    }
-	    | PRINT LITERAL {
-
-		  p2 = new_symbol($2);
-		  p2->typos = LITERAL;
-
-		  $$=MkNode(astPrintLtStmt,p2,NULL,NULL,NULL,NULL);
-
-		  push_vs(NULL);
-
-	    }
-	    | PRINTLN LITERAL {
-
-		  p2 = new_symbol($2);
-		  p2->typos = LITERAL;
-
-		  $$=MkNode(astPrintLnLtStmt,p2,NULL,NULL,NULL,NULL);
-
-		  push_vs(NULL);
-
-	    }
-	    | READ LITERAL ',' location {
-
-		  p2 = new_symbol($2);
-		  p2->typos = LITERAL;
-
-		  $$=MkNode(astReadStmt,p2,$4,NULL,NULL,NULL);
-		  pop_vs();
+      pop_vs();
 		  push_vs(NULL);
 
 	    }
@@ -852,13 +834,7 @@ singlestmt
 			$$=MkNode(astExprStmt,NULL,$1,NULL,NULL,NULL);
 			push_vs(NULL);
 		}
-	    | PUTS inline {
 
-		  $$=MkNode(astPutsStmt,NULL,$2,NULL,NULL,NULL);
-
-		  push_vs(NULL);
-
-	  }
 	  ;
 code
 	  :{ if(enableReturn==1)
@@ -867,24 +843,24 @@ code
 		;
 
 stmt
-      : assign /*';'*/ {
+      : assign separator {
 			$$=$1;
 			pop_vs();
 			push_vs(NULL);
       }
-	  | addassign /*';'*/ {
+	  | addassign separator {
 			$$=$1;
 			push_vs(NULL);
       }
-	  | subassign /*';'*/ {
+	  | subassign separator {
 			$$=$1;
 			push_vs(NULL);
       }
-	  | listedassign /*';'*/ {
+	  | listedassign separator {
 			$$=$1;
 			push_vs(NULL);
       }
-    | RETURN expr /*';'*/ {
+    | RETURN expr separator {
 
       if(enableReturn == 1){
 
@@ -981,7 +957,7 @@ stmt
 			push_vs(NULL);
 
       }
-	  | singlestmt IF expr /*';'*/ {
+	  | singlestmt IF expr separator {
 
 		  p3 = pop_vs();
 		  p1 = pop_vs();
@@ -991,7 +967,7 @@ stmt
 		  push_vs(NULL);
 
 	  }
-	  | singlestmt UNLESS expr /*';'*/ {
+	  | singlestmt UNLESS expr separator {
 
 		  p3 = pop_vs();
 		  p1 = pop_vs();
@@ -1036,7 +1012,7 @@ stmt
 		    if(TopOfWhile <0) enableReturn=1;
 			push_vs(NULL);
 		}
-      | BREAK /*';'*/ {
+      | BREAK separator {
 			 p = pop_wh();
 			 if(!p) {
 				 printf("Error: break statement not within loop ");
@@ -1050,76 +1026,44 @@ stmt
 			 $$=MkNode(astBreakStmt,NULL,NULL,NULL,NULL,NULL);
 			 push_vs(NULL);
         }
-      | block {
-			$$=$1;
-			push_vs(NULL);
-        }
-	  | PRINT expr /*';'*/{
+    | block {
+			        $$=$1;
+			        push_vs(NULL);
+      }
 
-		  $$=MkNode(astPrintStmt,NULL,$2,NULL,NULL,NULL);
-		  pop_vs();
-		  push_vs(NULL);
+	  | PRINTLN inline separator{
 
-	  }
-	  | PRINTLN expr /*';'*/{
 
 		  $$=MkNode(astPrintLnStmt,NULL,$2,NULL,NULL,NULL);
+		  push_vs(NULL);
+
+	  }
+	  | READ expr ',' location separator {
+
+
+		  $$=MkNode(astReadStmt,NULL,$2,$4,NULL,NULL);
 		  pop_vs();
+      pop_vs();
 		  push_vs(NULL);
 
 	  }
-	  | PRINT LITERAL /*';'*/{
-
-		  p2 = new_symbol($2);
-		  p2->typos = LITERAL;
-
-		  $$=MkNode(astPrintLtStmt,p2,NULL,NULL,NULL,NULL);
-
-		  push_vs(NULL);
-
-	  }
-	  | PRINTLN LITERAL /*';'*/{
-
-		  p2 = new_symbol($2);
-		  p2->typos = LITERAL;
-
-		  $$=MkNode(astPrintLnLtStmt,p2,NULL,NULL,NULL,NULL);
-
-		  push_vs(NULL);
-
-	  }
-	  | PUTS inline /*';'*/ {
-
-		  $$=MkNode(astPutsStmt,NULL,$2,NULL,NULL,NULL);
-
-		  push_vs(NULL);
-
-	  }
-	  | READ LITERAL ',' location /*';'*/ {
-
-		  p2 = new_symbol($2);
-		  p2->typos = LITERAL;
-
-		  $$=MkNode(astReadStmt,p2,$4,NULL,NULL,NULL);
-		  pop_vs();
-		  push_vs(NULL);
-
-	  }
-	  | expr /*';'*/ {
+	  | expr separator {
 
 			pop_vs();
 			$$=MkNode(astExprStmt,NULL,$1,NULL,NULL,NULL);
 			push_vs(NULL);
 		}
 
-      /*| ';' {
+      | separator {
 
 			$$=MkNode(astNullStmt,NULL,NULL,NULL,NULL,NULL);
 			//push_vs(NULL);
-		}*/
+		  }
 
       ;
-
+separator
+        : ';' {$$ = $1;}
+        ;
 inline
 	  : expr ',' inline {
 
@@ -1129,28 +1073,13 @@ inline
 
 
 	  }
-	  | LITERAL ',' inline {
 
-		  p2 = new_symbol($1);
-		  p2->typos = LITERAL;
-
-		  $$=MkNode(astLiteralInline,p2,$3,NULL,NULL,NULL);
-
-	  }
 	  | expr {
 
 		  p1 = pop_vs();
 
 		  $$=MkNode(astSingleExprInline,NULL,$1,NULL,NULL,NULL);
 
-
-	  }
-	  | LITERAL {
-
-		  p2 = new_symbol($1);
-		  p2->typos = LITERAL;
-
-		  $$=MkNode(astSingleLiteralInline,p2,NULL,NULL,NULL,NULL);
 
 	  }
 	;
@@ -1604,9 +1533,13 @@ add_expr
 							p->typos = INT;
 						break;
 						case BOOL:
-						    printf("Error: bad operand types for binary operator \n");
+						  printf("Error: bad operand types for binary operator \n");
 							exit(1);
 						break;
+            case STR:
+              printf("Error: bad operand types for binary operator \n");
+              exit(1);
+            break;
 
 					}
 
@@ -1622,8 +1555,12 @@ add_expr
 						break;
 						case BOOL:
 						    printf("Error: bad operand types for binary operator \n");
-							exit(1);
+							  exit(1);
 						break;
+            case STR:
+              printf("Error: bad operand types for binary operator \n");
+              exit(1);
+            break;
 
 					}
 			 break;
@@ -1633,6 +1570,26 @@ add_expr
 				    exit(1);
 
 			 break;
+       case STR:
+             switch(p3->typos){
+               case REAL:
+                   printf("Error: bad operand types for binary operator \n");
+                   exit(1);
+               break;
+               case INT:
+                   printf("Error: bad operand types for binary operator \n");
+                   exit(1);
+               break;
+               case BOOL:
+                   printf("Error: bad operand types for binary operator \n");
+                   exit(1);
+               break;
+               case STR:
+                  p->typos = STR;
+               break;
+
+             }
+       break;
 
 
 		 }
@@ -1673,9 +1630,12 @@ term
 							p->typos = INT;
 						break;
 						case BOOL:
-						    printf("Error: bad operand types for binary operator \n");
-							exit(1);
+						   printf("Error: bad operand types for binary operator \n");
+							 exit(1);
 						break;
+            case STR:
+                p->typos = STR;
+            break;
 
 					}
 
@@ -1691,16 +1651,37 @@ term
 						break;
 						case BOOL:
 						    printf("Error: bad operand types for binary operator \n");
-							exit(1);
+							  exit(1);
 						break;
+            case STR:
+                printf("Error: bad operand types for binary operator \n");
+                exit(1);
+            break;
 
 					}
 			 break;
 			 case BOOL:
 
-					printf("Error: bad operand types for binary operator \n");
+					  printf("Error: bad operand types for binary operator \n");
 				    exit(1);
 
+			 break;
+       case STR:
+
+					switch(p3->typos){
+						case REAL:
+                printf("Error: bad operand types for binary operator \n");
+                exit(1);
+						break;
+						case INT:
+							  p->typos = STR;
+						break;
+						case BOOL:
+						    printf("Error: bad operand types for binary operator \n");
+							  exit(1);
+						break;
+
+					}
 			 break;
 
 
@@ -1708,7 +1689,7 @@ term
 
 
 	     $$=MkNode(astMulExpr,NULL,$1,$2,$3,NULL);
-         p->lvalue = 0;
+       p->lvalue = 0;
 	     push_vs(p);
 }
      | factor { $$=$1;}
@@ -1770,14 +1751,27 @@ factor
 
 		  p2 = pop_vs();
 		  p1 = pop_vs();
+      push_rt(new_symbol("*"));
 
 		  strcpy(METHOD_NAME_TEMP,"");
 
-	      while(strcmp(p1->name,"259") == 0 || strcmp(p1->name,"274") == 0 || strcmp(p1->name,"276") == 0 ){
-
-			  strcat(METHOD_NAME_TEMP,p1->name);
-			  p1 = pop_vs();
+	      while(strcmp(p1->name,"259") == 0 || strcmp(p1->name,"274") == 0 || strcmp(p1->name,"276") == 0 || strcmp(p1->name,"285") == 0 ){
+          push_rt(p1);
+      //  printf("%s\n",p1->name);
+			//  strcat(METHOD_NAME_TEMP,p1->name);
+			    p1 = pop_vs();
 		  }
+
+      push_vs(p1);
+
+      p1 = pop_rt();
+
+      while(strcmp(p1->name,"259") == 0 || strcmp(p1->name,"274") == 0 || strcmp(p1->name,"276") == 0 || strcmp(p1->name,"285") == 0 ){
+        strcat(METHOD_NAME_TEMP,p1->name);
+        p1 = pop_rt();
+    }
+
+      p1 = pop_vs();
 
 
 		  strcpy(METHOD_NAME,p1->name);
@@ -1791,7 +1785,7 @@ factor
 
 		  if(p == NULL){
              printf("Error: '%s' undeclared method",p3->name);
-			 exit(1);
+			       exit(1);
 		    }
 		  //printf("%s\n",p->name);
 		 // printf("%d\n",numOfArguments);
@@ -1803,7 +1797,7 @@ factor
 		  }
 		  */
 
-          $$ = MkNode(astMethodCall,p,$1,$3,NULL,NULL);
+        $$ = MkNode(astMethodCall,p,$1,$3,NULL,NULL);
  	      push_vs(p);
 
 		  //numOfArguments =0;
@@ -1829,6 +1823,17 @@ factor
           push_vs(p1);
 	      $$ = MkNode(astRealDeConst,p1,NULL,NULL,NULL,NULL);
          }
+
+    | LITERAL {
+
+     		  p2 = new_symbol("");
+          strncpy(p2->stimi,$1 + 1, strlen($1) - 2);
+          p2->sclass = CONSTANT;
+     		  p2->typos = STR;
+          push_vs(p2);
+     		  $$=MkNode(astString,p2,NULL,NULL,NULL,NULL);
+
+     	  }
      ;
 
 incdec
@@ -2064,21 +2069,26 @@ int set_class_types(symbol *symbp, int class_tipos)
 {
    switch(class_tipos)
    {
-      case INT:
+
+    case INT:
          if(symbp->typos) return(1);
          symbp->typos=class_tipos;
-      break;
+    break;
 	  case REAL:
          if(symbp->typos) return(1);
          symbp->typos=class_tipos;
-      break;
+    break;
 	  case BOOL:
          if(symbp->typos) return(1);
          symbp->typos=class_tipos;
-      break;
-      case METHOD:
-		 add_method_dcl(symbp);
-         break;
+    break;
+    case METHOD:
+		     add_method_dcl(symbp);
+    break;
+    case STR:
+          if(symbp->typos) return(1);
+          symbp->typos=class_tipos;
+    break;
    }
    return(0);
 }

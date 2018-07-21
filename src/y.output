@@ -44,169 +44,165 @@
 
   27  func : FUNC ID $$4 '(' params ')' RIGHTARROW type $$5 body
 
-  28  params : formals type ID
+  28  params : formals ID ':' type
   29         |
 
-  30  formals : formals type ID ','
+  30  formals : formals ID ':' type ','
   31          |
 
   32  type : INT
   33       | REAL
   34       | BOOL
-  35       | ID
+  35       | STR
+  36       | ID
 
-  36  body : '{' decls stmts '}'
+  37  body : '{' decls stmts '}'
 
-  37  decls : decl_list decl
-  38        |
+  38  decls : decl_list decl
+  39        |
 
-  39  decl_list : decl_list decl
-  40            |
+  40  decl_list : decl_list decl
+  41            |
 
-  41  $$6 :
+  42  $$6 :
 
-  42  decl : VAR ID ':' type $$6 vars
+  43  decl : VAR ID ':' type $$6 vars separator
 
-  43  $$7 :
+  44  $$7 :
 
-  44  decl : VAR ID ':' type '[' DEC_CONST ']' $$7 vars
+  45  decl : VAR ID ':' type '[' DEC_CONST ']' $$7 vars separator
 
-  45  $$8 :
+  46  $$8 :
 
-  46  decl : VAR ID ':' type '=' expr $$8 vars
+  47  decl : VAR ID ':' type '=' expr $$8 vars separator
 
-  47  $$9 :
+  48  $$9 :
 
-  48  vars : ',' ID $$9 vars
+  49  vars : ',' ID $$9 vars
 
-  49  $$10 :
+  50  $$10 :
 
-  50  vars : ',' ID '=' expr $$10 vars
-  51       |
+  51  vars : ',' ID '=' expr $$10 vars
+  52       |
 
-  52  stmts : stmts stmt
-  53        |
+  53  stmts : stmts stmt
+  54        |
 
-  54  singlestmt : assign
-  55             | addassign
-  56             | subassign
-  57             | listedassign
-  58             | PRINT expr
-  59             | PRINTLN expr
-  60             | PRINT LITERAL
-  61             | PRINTLN LITERAL
-  62             | READ LITERAL ',' location
-  63             | expr
-  64             | PUTS inline
+  55  singlestmt : assign
+  56             | addassign
+  57             | subassign
+  58             | listedassign
+  59             | PRINTLN inline
+  60             | READ expr ',' location
+  61             | expr
 
-  65  code :
+  62  code :
 
-  66  stmt : assign
-  67       | addassign
-  68       | subassign
-  69       | listedassign
-  70       | RETURN expr
-  71       | IF code '(' expr ')' stmt
+  63  stmt : assign separator
+  64       | addassign separator
+  65       | subassign separator
+  66       | listedassign separator
+  67       | RETURN expr separator
+  68       | IF code '(' expr ')' stmt
 
-  72  $$11 :
+  69  $$11 :
 
-  73  stmt : IF code '(' expr ')' stmt ELSE $$11 stmt
-  74       | singlestmt IF expr
-  75       | singlestmt UNLESS expr
+  70  stmt : IF code '(' expr ')' stmt ELSE $$11 stmt
+  71       | singlestmt IF expr separator
+  72       | singlestmt UNLESS expr separator
 
-  76  $$12 :
+  73  $$12 :
 
-  77  stmt : WHILE $$12 '(' expr ')' stmt
+  74  stmt : WHILE $$12 '(' expr ')' stmt
 
-  78  $$13 :
+  75  $$13 :
 
-  79  stmt : expr TIMES $$13 stmt
-  80       | BREAK
-  81       | block
-  82       | PRINT expr
-  83       | PRINTLN expr
-  84       | PRINT LITERAL
-  85       | PRINTLN LITERAL
-  86       | PUTS inline
-  87       | READ LITERAL ',' location
-  88       | expr
+  76  stmt : expr TIMES $$13 stmt
+  77       | BREAK separator
+  78       | block
+  79       | PRINTLN inline separator
+  80       | READ expr ',' location separator
+  81       | expr separator
+  82       | separator
 
-  89  inline : expr ',' inline
-  90         | LITERAL ',' inline
-  91         | expr
-  92         | LITERAL
+  83  separator : ';'
 
-  93  block : '{' stmts '}'
+  84  inline : expr ',' inline
+  85         | expr
 
-  94  addassign : location ADDASSIGN expr
+  86  block : '{' stmts '}'
 
-  95  subassign : location SUBASSIGN expr
+  87  addassign : location ADDASSIGN expr
 
-  96  assign : location '=' expr
-  97         | location '=' assign
+  88  subassign : location SUBASSIGN expr
 
-  98  listedassign : location ',' nestedassign ',' expr
+  89  assign : location '=' expr
+  90         | location '=' assign
 
-  99  nestedassign : location ',' nestedassign ',' expr
- 100               | location '=' expr
+  91  listedassign : location ',' nestedassign ',' expr
 
- 101  method : ID
+  92  nestedassign : location ',' nestedassign ',' expr
+  93               | location '=' expr
 
- 102  location : ID
+  94  method : ID
 
- 103  expr : expr OR logAnd_expr
- 104       | logAnd_expr
+  95  location : ID
 
- 105  logAnd_expr : logAnd_expr AND not_expr
- 106              | not_expr
+  96  expr : expr OR logAnd_expr
+  97       | logAnd_expr
 
- 107  not_expr : NOT comp_expr
- 108           | comp_expr
+  98  logAnd_expr : logAnd_expr AND not_expr
+  99              | not_expr
 
- 109  comp_expr : add_expr relop add_expr
- 110            | add_expr
+ 100  not_expr : NOT comp_expr
+ 101           | comp_expr
 
- 111  relop : GE
- 112        | '>'
- 113        | LE
- 114        | '<'
- 115        | NE
- 116        | EQ
+ 102  comp_expr : add_expr relop add_expr
+ 103            | add_expr
 
- 117  add_expr : add_expr addop term
- 118           | term
+ 104  relop : GE
+ 105        | '>'
+ 106        | LE
+ 107        | '<'
+ 108        | NE
+ 109        | EQ
 
- 119  addop : '+'
- 120        | '-'
+ 110  add_expr : add_expr addop term
+ 111           | term
 
- 121  term : term mulop factor
- 122       | factor
+ 112  addop : '+'
+ 113        | '-'
 
- 123  mulop : '*'
- 124        | '/'
- 125        | '%'
+ 114  term : term mulop factor
+ 115       | factor
 
- 126  factor : incdec
- 127         | '(' expr ')'
- 128         | location
- 129         | DEC_CONST
- 130         | REAL_DEC_CONST
- 131         | TRUE
- 132         | FALSE
- 133         | method '(' actuals ')'
- 134         | '-' DEC_CONST
- 135         | '-' REAL_DEC_CONST
+ 116  mulop : '*'
+ 117        | '/'
+ 118        | IDIV
+ 119        | '%'
 
- 136  incdec : location INC
- 137         | INC location
- 138         | location DEC
- 139         | DEC location
+ 120  factor : incdec
+ 121         | '(' expr ')'
+ 122         | location
+ 123         | DEC_CONST
+ 124         | REAL_DEC_CONST
+ 125         | TRUE
+ 126         | FALSE
+ 127         | method '(' actuals ')'
+ 128         | '-' DEC_CONST
+ 129         | '-' REAL_DEC_CONST
+ 130         | LITERAL
 
- 140  actuals : args expr
- 141          |
+ 131  incdec : location INC
+ 132         | INC location
+ 133         | location DEC
+ 134         | DEC location
 
- 142  args : args expr ','
- 143       |
+ 135  actuals : args expr
+ 136          |
+
+ 137  args : args expr ','
+ 138       |
 
 state 0
 	$accept : . program $end  (0)
@@ -248,9 +244,9 @@ state 3
 
 
 state 4
-	decl : VAR . ID ':' type $$6 vars  (42)
-	decl : VAR . ID ':' type '[' DEC_CONST ']' $$7 vars  (44)
-	decl : VAR . ID ':' type '=' expr $$8 vars  (46)
+	decl : VAR . ID ':' type $$6 vars separator  (43)
+	decl : VAR . ID ':' type '[' DEC_CONST ']' $$7 vars separator  (45)
+	decl : VAR . ID ':' type '=' expr $$8 vars separator  (47)
 
 	ID  shift 12
 	.  error
@@ -342,9 +338,9 @@ state 11
 
 
 state 12
-	decl : VAR ID . ':' type $$6 vars  (42)
-	decl : VAR ID . ':' type '[' DEC_CONST ']' $$7 vars  (44)
-	decl : VAR ID . ':' type '=' expr $$8 vars  (46)
+	decl : VAR ID . ':' type $$6 vars separator  (43)
+	decl : VAR ID . ':' type '[' DEC_CONST ']' $$7 vars separator  (45)
+	decl : VAR ID . ':' type '=' expr $$8 vars separator  (47)
 
 	':'  shift 18
 	.  error
@@ -383,17 +379,18 @@ state 17
 
 
 state 18
-	decl : VAR ID ':' . type $$6 vars  (42)
-	decl : VAR ID ':' . type '[' DEC_CONST ']' $$7 vars  (44)
-	decl : VAR ID ':' . type '=' expr $$8 vars  (46)
+	decl : VAR ID ':' . type $$6 vars separator  (43)
+	decl : VAR ID ':' . type '[' DEC_CONST ']' $$7 vars separator  (45)
+	decl : VAR ID ':' . type '=' expr $$8 vars separator  (47)
 
 	INT  shift 21
 	REAL  shift 22
 	BOOL  shift 23
-	ID  shift 24
+	STR  shift 24
+	ID  shift 25
 	.  error
 
-	type  goto 25
+	type  goto 26
 
 
 state 19
@@ -402,7 +399,7 @@ state 19
 
 	.  reduce 9
 
-	$$1  goto 26
+	$$1  goto 27
 
 
 state 20
@@ -410,14 +407,11 @@ state 20
 	params : .  (29)
 	formals : .  (31)
 
-	INT  reduce 31
-	REAL  reduce 31
-	BOOL  reduce 31
 	')'  reduce 29
 	ID  reduce 31
 
-	params  goto 27
-	formals  goto 28
+	params  goto 28
+	formals  goto 29
 
 
 state 21
@@ -439,633 +433,474 @@ state 23
 
 
 state 24
-	type : ID .  (35)
+	type : STR .  (35)
 
 	.  reduce 35
 
 
 state 25
-	decl : VAR ID ':' type . $$6 vars  (42)
-	decl : VAR ID ':' type . '[' DEC_CONST ']' $$7 vars  (44)
-	decl : VAR ID ':' type . '=' expr $$8 vars  (46)
-	$$6 : .  (41)
+	type : ID .  (36)
 
-	'='  shift 29
-	'['  shift 30
-	$end  reduce 41
-	FALSE  reduce 41
-	TRUE  reduce 41
-	RETURN  reduce 41
-	IF  reduce 41
-	WHILE  reduce 41
-	BREAK  reduce 41
-	PRINT  reduce 41
-	READ  reduce 41
-	PRINTLN  reduce 41
-	NOT  reduce 41
-	PUTS  reduce 41
-	FUNC  reduce 41
-	CLASS  reduce 41
-	PUBLIC  reduce 41
-	ABSTRACT  reduce 41
-	VAR  reduce 41
-	DEC_CONST  reduce 41
-	REAL_DEC_CONST  reduce 41
-	'('  reduce 41
-	'{'  reduce 41
-	'}'  reduce 41
-	'-'  reduce 41
-	','  reduce 41
-	ID  reduce 41
-	INC  reduce 41
-	DEC  reduce 41
-
-	$$6  goto 31
+	.  reduce 36
 
 
 state 26
-	class : modifier CLASS ID $$1 . bodyclass  (10)
+	decl : VAR ID ':' type . $$6 vars separator  (43)
+	decl : VAR ID ':' type . '[' DEC_CONST ']' $$7 vars separator  (45)
+	decl : VAR ID ':' type . '=' expr $$8 vars separator  (47)
+	$$6 : .  (42)
 
-	'{'  shift 32
-	.  error
+	'='  shift 30
+	'['  shift 31
+	';'  reduce 42
+	','  reduce 42
 
-	bodyclass  goto 33
+	$$6  goto 32
 
 
 state 27
-	func : FUNC ID $$4 '(' params . ')' RIGHTARROW type $$5 body  (27)
+	class : modifier CLASS ID $$1 . bodyclass  (10)
 
-	')'  shift 34
+	'{'  shift 33
 	.  error
+
+	bodyclass  goto 34
 
 
 state 28
-	params : formals . type ID  (28)
-	formals : formals . type ID ','  (30)
+	func : FUNC ID $$4 '(' params . ')' RIGHTARROW type $$5 body  (27)
 
-	INT  shift 21
-	REAL  shift 22
-	BOOL  shift 23
-	ID  shift 24
+	')'  shift 35
 	.  error
-
-	type  goto 35
 
 
 state 29
-	decl : VAR ID ':' type '=' . expr $$8 vars  (46)
+	params : formals . ID ':' type  (28)
+	formals : formals . ID ':' type ','  (30)
 
-	FALSE  shift 36
-	TRUE  shift 37
-	NOT  shift 38
-	DEC_CONST  shift 39
-	REAL_DEC_CONST  shift 40
-	'('  shift 41
-	'-'  shift 42
-	ID  shift 43
-	INC  shift 44
-	DEC  shift 45
+	ID  shift 36
 	.  error
-
-	expr  goto 46
-	logAnd_expr  goto 47
-	not_expr  goto 48
-	comp_expr  goto 49
-	location  goto 50
-	method  goto 51
-	add_expr  goto 52
-	term  goto 53
-	factor  goto 54
-	incdec  goto 55
 
 
 state 30
-	decl : VAR ID ':' type '[' . DEC_CONST ']' $$7 vars  (44)
+	decl : VAR ID ':' type '=' . expr $$8 vars separator  (47)
 
-	DEC_CONST  shift 56
+	FALSE  shift 37
+	TRUE  shift 38
+	NOT  shift 39
+	DEC_CONST  shift 40
+	LITERAL  shift 41
+	REAL_DEC_CONST  shift 42
+	'('  shift 43
+	'-'  shift 44
+	ID  shift 45
+	INC  shift 46
+	DEC  shift 47
 	.  error
+
+	expr  goto 48
+	logAnd_expr  goto 49
+	not_expr  goto 50
+	comp_expr  goto 51
+	location  goto 52
+	method  goto 53
+	add_expr  goto 54
+	term  goto 55
+	factor  goto 56
+	incdec  goto 57
 
 
 state 31
-	decl : VAR ID ':' type $$6 . vars  (42)
-	vars : .  (51)
+	decl : VAR ID ':' type '[' . DEC_CONST ']' $$7 vars separator  (45)
 
-	','  shift 57
-	$end  reduce 51
-	FALSE  reduce 51
-	TRUE  reduce 51
-	RETURN  reduce 51
-	IF  reduce 51
-	WHILE  reduce 51
-	BREAK  reduce 51
-	PRINT  reduce 51
-	READ  reduce 51
-	PRINTLN  reduce 51
-	NOT  reduce 51
-	PUTS  reduce 51
-	FUNC  reduce 51
-	CLASS  reduce 51
-	PUBLIC  reduce 51
-	ABSTRACT  reduce 51
-	VAR  reduce 51
-	DEC_CONST  reduce 51
-	REAL_DEC_CONST  reduce 51
-	'('  reduce 51
-	'{'  reduce 51
-	'}'  reduce 51
-	'-'  reduce 51
-	ID  reduce 51
-	INC  reduce 51
-	DEC  reduce 51
-
-	vars  goto 58
+	DEC_CONST  shift 58
+	.  error
 
 
 state 32
+	decl : VAR ID ':' type $$6 . vars separator  (43)
+	vars : .  (52)
+
+	','  shift 59
+	';'  reduce 52
+
+	vars  goto 60
+
+
+state 33
 	bodyclass : '{' . fields meth_list '}'  (21)
 	fields : .  (15)
 
-	'@'  shift 59
+	'@'  shift 61
 	PUBLIC  reduce 15
 	ABSTRACT  reduce 15
 	'}'  reduce 15
 	ID  reduce 15
 
-	fields  goto 60
-	field  goto 61
+	fields  goto 62
+	field  goto 63
 
 
-state 33
+state 34
 	class : modifier CLASS ID $$1 bodyclass .  (10)
 
 	.  reduce 10
 
 
-state 34
+state 35
 	func : FUNC ID $$4 '(' params ')' . RIGHTARROW type $$5 body  (27)
 
-	RIGHTARROW  shift 62
-	.  error
-
-
-state 35
-	params : formals type . ID  (28)
-	formals : formals type . ID ','  (30)
-
-	ID  shift 63
+	RIGHTARROW  shift 64
 	.  error
 
 
 state 36
-	factor : FALSE .  (132)
+	params : formals ID . ':' type  (28)
+	formals : formals ID . ':' type ','  (30)
 
-	.  reduce 132
+	':'  shift 65
+	.  error
 
 
 state 37
-	factor : TRUE .  (131)
-
-	.  reduce 131
-
-
-state 38
-	not_expr : NOT . comp_expr  (107)
-
-	FALSE  shift 36
-	TRUE  shift 37
-	DEC_CONST  shift 39
-	REAL_DEC_CONST  shift 40
-	'('  shift 41
-	'-'  shift 42
-	ID  shift 43
-	INC  shift 44
-	DEC  shift 45
-	.  error
-
-	comp_expr  goto 64
-	location  goto 50
-	method  goto 51
-	add_expr  goto 52
-	term  goto 53
-	factor  goto 54
-	incdec  goto 55
-
-
-state 39
-	factor : DEC_CONST .  (129)
-
-	.  reduce 129
-
-
-state 40
-	factor : REAL_DEC_CONST .  (130)
-
-	.  reduce 130
-
-
-state 41
-	factor : '(' . expr ')'  (127)
-
-	FALSE  shift 36
-	TRUE  shift 37
-	NOT  shift 38
-	DEC_CONST  shift 39
-	REAL_DEC_CONST  shift 40
-	'('  shift 41
-	'-'  shift 42
-	ID  shift 43
-	INC  shift 44
-	DEC  shift 45
-	.  error
-
-	expr  goto 65
-	logAnd_expr  goto 47
-	not_expr  goto 48
-	comp_expr  goto 49
-	location  goto 50
-	method  goto 51
-	add_expr  goto 52
-	term  goto 53
-	factor  goto 54
-	incdec  goto 55
-
-
-state 42
-	factor : '-' . DEC_CONST  (134)
-	factor : '-' . REAL_DEC_CONST  (135)
-
-	DEC_CONST  shift 66
-	REAL_DEC_CONST  shift 67
-	.  error
-
-
-43: reduce/reduce conflict (reduce 101, reduce 102) on '('
-state 43
-	method : ID .  (101)
-	location : ID .  (102)
-
-	$end  reduce 102
-	FALSE  reduce 102
-	TRUE  reduce 102
-	RETURN  reduce 102
-	IF  reduce 102
-	ELSE  reduce 102
-	WHILE  reduce 102
-	BREAK  reduce 102
-	PRINT  reduce 102
-	READ  reduce 102
-	PRINTLN  reduce 102
-	TIMES  reduce 102
-	UNLESS  reduce 102
-	NOT  reduce 102
-	AND  reduce 102
-	OR  reduce 102
-	PUTS  reduce 102
-	FUNC  reduce 102
-	CLASS  reduce 102
-	PUBLIC  reduce 102
-	ABSTRACT  reduce 102
-	VAR  reduce 102
-	DEC_CONST  reduce 102
-	REAL_DEC_CONST  reduce 102
-	'('  reduce 101
-	')'  reduce 102
-	'{'  reduce 102
-	'}'  reduce 102
-	'*'  reduce 102
-	'/'  reduce 102
-	'+'  reduce 102
-	'-'  reduce 102
-	'='  reduce 102
-	','  reduce 102
-	GE  reduce 102
-	'>'  reduce 102
-	LE  reduce 102
-	'<'  reduce 102
-	NE  reduce 102
-	EQ  reduce 102
-	ID  reduce 102
-	INC  reduce 102
-	DEC  reduce 102
-	ADDASSIGN  reduce 102
-	SUBASSIGN  reduce 102
-	'@'  reduce 102
-	'%'  reduce 102
-
-
-state 44
-	incdec : INC . location  (137)
-
-	ID  shift 68
-	.  error
-
-	location  goto 69
-
-
-state 45
-	incdec : DEC . location  (139)
-
-	ID  shift 68
-	.  error
-
-	location  goto 70
-
-
-state 46
-	decl : VAR ID ':' type '=' expr . $$8 vars  (46)
-	expr : expr . OR logAnd_expr  (103)
-	$$8 : .  (45)
-
-	OR  shift 71
-	$end  reduce 45
-	FALSE  reduce 45
-	TRUE  reduce 45
-	RETURN  reduce 45
-	IF  reduce 45
-	WHILE  reduce 45
-	BREAK  reduce 45
-	PRINT  reduce 45
-	READ  reduce 45
-	PRINTLN  reduce 45
-	NOT  reduce 45
-	PUTS  reduce 45
-	FUNC  reduce 45
-	CLASS  reduce 45
-	PUBLIC  reduce 45
-	ABSTRACT  reduce 45
-	VAR  reduce 45
-	DEC_CONST  reduce 45
-	REAL_DEC_CONST  reduce 45
-	'('  reduce 45
-	'{'  reduce 45
-	'}'  reduce 45
-	'-'  reduce 45
-	','  reduce 45
-	ID  reduce 45
-	INC  reduce 45
-	DEC  reduce 45
-
-	$$8  goto 72
-
-
-state 47
-	expr : logAnd_expr .  (104)
-	logAnd_expr : logAnd_expr . AND not_expr  (105)
-
-	AND  shift 73
-	$end  reduce 104
-	FALSE  reduce 104
-	TRUE  reduce 104
-	RETURN  reduce 104
-	IF  reduce 104
-	ELSE  reduce 104
-	WHILE  reduce 104
-	BREAK  reduce 104
-	PRINT  reduce 104
-	READ  reduce 104
-	PRINTLN  reduce 104
-	TIMES  reduce 104
-	UNLESS  reduce 104
-	NOT  reduce 104
-	OR  reduce 104
-	PUTS  reduce 104
-	FUNC  reduce 104
-	CLASS  reduce 104
-	PUBLIC  reduce 104
-	ABSTRACT  reduce 104
-	VAR  reduce 104
-	DEC_CONST  reduce 104
-	REAL_DEC_CONST  reduce 104
-	'('  reduce 104
-	')'  reduce 104
-	'{'  reduce 104
-	'}'  reduce 104
-	'-'  reduce 104
-	','  reduce 104
-	ID  reduce 104
-	INC  reduce 104
-	DEC  reduce 104
-	'@'  reduce 104
-
-
-state 48
-	logAnd_expr : not_expr .  (106)
-
-	.  reduce 106
-
-
-state 49
-	not_expr : comp_expr .  (108)
-
-	.  reduce 108
-
-
-50: shift/reduce conflict (shift 74, reduce 128) on INC
-50: shift/reduce conflict (shift 75, reduce 128) on DEC
-state 50
-	factor : location .  (128)
-	incdec : location . INC  (136)
-	incdec : location . DEC  (138)
-
-	INC  shift 74
-	DEC  shift 75
-	$end  reduce 128
-	FALSE  reduce 128
-	TRUE  reduce 128
-	RETURN  reduce 128
-	IF  reduce 128
-	ELSE  reduce 128
-	WHILE  reduce 128
-	BREAK  reduce 128
-	PRINT  reduce 128
-	READ  reduce 128
-	PRINTLN  reduce 128
-	TIMES  reduce 128
-	UNLESS  reduce 128
-	NOT  reduce 128
-	AND  reduce 128
-	OR  reduce 128
-	PUTS  reduce 128
-	FUNC  reduce 128
-	CLASS  reduce 128
-	PUBLIC  reduce 128
-	ABSTRACT  reduce 128
-	VAR  reduce 128
-	DEC_CONST  reduce 128
-	REAL_DEC_CONST  reduce 128
-	'('  reduce 128
-	')'  reduce 128
-	'{'  reduce 128
-	'}'  reduce 128
-	'*'  reduce 128
-	'/'  reduce 128
-	'+'  reduce 128
-	'-'  reduce 128
-	','  reduce 128
-	GE  reduce 128
-	'>'  reduce 128
-	LE  reduce 128
-	'<'  reduce 128
-	NE  reduce 128
-	EQ  reduce 128
-	ID  reduce 128
-	'@'  reduce 128
-	'%'  reduce 128
-
-
-state 51
-	factor : method . '(' actuals ')'  (133)
-
-	'('  shift 76
-	.  error
-
-
-52: shift/reduce conflict (shift 78, reduce 110) on '-'
-state 52
-	comp_expr : add_expr . relop add_expr  (109)
-	comp_expr : add_expr .  (110)
-	add_expr : add_expr . addop term  (117)
-
-	'+'  shift 77
-	'-'  shift 78
-	GE  shift 79
-	'>'  shift 80
-	LE  shift 81
-	'<'  shift 82
-	NE  shift 83
-	EQ  shift 84
-	$end  reduce 110
-	FALSE  reduce 110
-	TRUE  reduce 110
-	RETURN  reduce 110
-	IF  reduce 110
-	ELSE  reduce 110
-	WHILE  reduce 110
-	BREAK  reduce 110
-	PRINT  reduce 110
-	READ  reduce 110
-	PRINTLN  reduce 110
-	TIMES  reduce 110
-	UNLESS  reduce 110
-	NOT  reduce 110
-	AND  reduce 110
-	OR  reduce 110
-	PUTS  reduce 110
-	FUNC  reduce 110
-	CLASS  reduce 110
-	PUBLIC  reduce 110
-	ABSTRACT  reduce 110
-	VAR  reduce 110
-	DEC_CONST  reduce 110
-	REAL_DEC_CONST  reduce 110
-	'('  reduce 110
-	')'  reduce 110
-	'{'  reduce 110
-	'}'  reduce 110
-	','  reduce 110
-	ID  reduce 110
-	INC  reduce 110
-	DEC  reduce 110
-	'@'  reduce 110
-
-	relop  goto 85
-	addop  goto 86
-
-
-state 53
-	add_expr : term .  (118)
-	term : term . mulop factor  (121)
-
-	'*'  shift 87
-	'/'  shift 88
-	'%'  shift 89
-	$end  reduce 118
-	FALSE  reduce 118
-	TRUE  reduce 118
-	RETURN  reduce 118
-	IF  reduce 118
-	ELSE  reduce 118
-	WHILE  reduce 118
-	BREAK  reduce 118
-	PRINT  reduce 118
-	READ  reduce 118
-	PRINTLN  reduce 118
-	TIMES  reduce 118
-	UNLESS  reduce 118
-	NOT  reduce 118
-	AND  reduce 118
-	OR  reduce 118
-	PUTS  reduce 118
-	FUNC  reduce 118
-	CLASS  reduce 118
-	PUBLIC  reduce 118
-	ABSTRACT  reduce 118
-	VAR  reduce 118
-	DEC_CONST  reduce 118
-	REAL_DEC_CONST  reduce 118
-	'('  reduce 118
-	')'  reduce 118
-	'{'  reduce 118
-	'}'  reduce 118
-	'+'  reduce 118
-	'-'  reduce 118
-	','  reduce 118
-	GE  reduce 118
-	'>'  reduce 118
-	LE  reduce 118
-	'<'  reduce 118
-	NE  reduce 118
-	EQ  reduce 118
-	ID  reduce 118
-	INC  reduce 118
-	DEC  reduce 118
-	'@'  reduce 118
-
-	mulop  goto 90
-
-
-state 54
-	term : factor .  (122)
-
-	.  reduce 122
-
-
-state 55
-	factor : incdec .  (126)
+	factor : FALSE .  (126)
 
 	.  reduce 126
 
 
-state 56
-	decl : VAR ID ':' type '[' DEC_CONST . ']' $$7 vars  (44)
+state 38
+	factor : TRUE .  (125)
 
-	']'  shift 91
+	.  reduce 125
+
+
+state 39
+	not_expr : NOT . comp_expr  (100)
+
+	FALSE  shift 37
+	TRUE  shift 38
+	DEC_CONST  shift 40
+	LITERAL  shift 41
+	REAL_DEC_CONST  shift 42
+	'('  shift 43
+	'-'  shift 44
+	ID  shift 45
+	INC  shift 46
+	DEC  shift 47
 	.  error
+
+	comp_expr  goto 66
+	location  goto 52
+	method  goto 53
+	add_expr  goto 54
+	term  goto 55
+	factor  goto 56
+	incdec  goto 57
+
+
+state 40
+	factor : DEC_CONST .  (123)
+
+	.  reduce 123
+
+
+state 41
+	factor : LITERAL .  (130)
+
+	.  reduce 130
+
+
+state 42
+	factor : REAL_DEC_CONST .  (124)
+
+	.  reduce 124
+
+
+state 43
+	factor : '(' . expr ')'  (121)
+
+	FALSE  shift 37
+	TRUE  shift 38
+	NOT  shift 39
+	DEC_CONST  shift 40
+	LITERAL  shift 41
+	REAL_DEC_CONST  shift 42
+	'('  shift 43
+	'-'  shift 44
+	ID  shift 45
+	INC  shift 46
+	DEC  shift 47
+	.  error
+
+	expr  goto 67
+	logAnd_expr  goto 49
+	not_expr  goto 50
+	comp_expr  goto 51
+	location  goto 52
+	method  goto 53
+	add_expr  goto 54
+	term  goto 55
+	factor  goto 56
+	incdec  goto 57
+
+
+state 44
+	factor : '-' . DEC_CONST  (128)
+	factor : '-' . REAL_DEC_CONST  (129)
+
+	DEC_CONST  shift 68
+	REAL_DEC_CONST  shift 69
+	.  error
+
+
+state 45
+	method : ID .  (94)
+	location : ID .  (95)
+
+	IF  reduce 95
+	TIMES  reduce 95
+	UNLESS  reduce 95
+	AND  reduce 95
+	OR  reduce 95
+	PUBLIC  reduce 95
+	ABSTRACT  reduce 95
+	'('  reduce 94
+	')'  reduce 95
+	'}'  reduce 95
+	'*'  reduce 95
+	'/'  reduce 95
+	'+'  reduce 95
+	'-'  reduce 95
+	'='  reduce 95
+	';'  reduce 95
+	','  reduce 95
+	IDIV  reduce 95
+	GE  reduce 95
+	'>'  reduce 95
+	LE  reduce 95
+	'<'  reduce 95
+	NE  reduce 95
+	EQ  reduce 95
+	ID  reduce 95
+	INC  reduce 95
+	DEC  reduce 95
+	ADDASSIGN  reduce 95
+	SUBASSIGN  reduce 95
+	'@'  reduce 95
+	'%'  reduce 95
+
+
+state 46
+	incdec : INC . location  (132)
+
+	ID  shift 70
+	.  error
+
+	location  goto 71
+
+
+state 47
+	incdec : DEC . location  (134)
+
+	ID  shift 70
+	.  error
+
+	location  goto 72
+
+
+state 48
+	decl : VAR ID ':' type '=' expr . $$8 vars separator  (47)
+	expr : expr . OR logAnd_expr  (96)
+	$$8 : .  (46)
+
+	OR  shift 73
+	';'  reduce 46
+	','  reduce 46
+
+	$$8  goto 74
+
+
+state 49
+	expr : logAnd_expr .  (97)
+	logAnd_expr : logAnd_expr . AND not_expr  (98)
+
+	AND  shift 75
+	IF  reduce 97
+	TIMES  reduce 97
+	UNLESS  reduce 97
+	OR  reduce 97
+	PUBLIC  reduce 97
+	ABSTRACT  reduce 97
+	')'  reduce 97
+	'}'  reduce 97
+	';'  reduce 97
+	','  reduce 97
+	ID  reduce 97
+	'@'  reduce 97
+
+
+state 50
+	logAnd_expr : not_expr .  (99)
+
+	.  reduce 99
+
+
+state 51
+	not_expr : comp_expr .  (101)
+
+	.  reduce 101
+
+
+state 52
+	factor : location .  (122)
+	incdec : location . INC  (131)
+	incdec : location . DEC  (133)
+
+	INC  shift 76
+	DEC  shift 77
+	IF  reduce 122
+	TIMES  reduce 122
+	UNLESS  reduce 122
+	AND  reduce 122
+	OR  reduce 122
+	PUBLIC  reduce 122
+	ABSTRACT  reduce 122
+	')'  reduce 122
+	'}'  reduce 122
+	'*'  reduce 122
+	'/'  reduce 122
+	'+'  reduce 122
+	'-'  reduce 122
+	';'  reduce 122
+	','  reduce 122
+	IDIV  reduce 122
+	GE  reduce 122
+	'>'  reduce 122
+	LE  reduce 122
+	'<'  reduce 122
+	NE  reduce 122
+	EQ  reduce 122
+	ID  reduce 122
+	'@'  reduce 122
+	'%'  reduce 122
+
+
+state 53
+	factor : method . '(' actuals ')'  (127)
+
+	'('  shift 78
+	.  error
+
+
+state 54
+	comp_expr : add_expr . relop add_expr  (102)
+	comp_expr : add_expr .  (103)
+	add_expr : add_expr . addop term  (110)
+
+	'+'  shift 79
+	'-'  shift 80
+	GE  shift 81
+	'>'  shift 82
+	LE  shift 83
+	'<'  shift 84
+	NE  shift 85
+	EQ  shift 86
+	IF  reduce 103
+	TIMES  reduce 103
+	UNLESS  reduce 103
+	AND  reduce 103
+	OR  reduce 103
+	PUBLIC  reduce 103
+	ABSTRACT  reduce 103
+	')'  reduce 103
+	'}'  reduce 103
+	';'  reduce 103
+	','  reduce 103
+	ID  reduce 103
+	'@'  reduce 103
+
+	relop  goto 87
+	addop  goto 88
+
+
+state 55
+	add_expr : term .  (111)
+	term : term . mulop factor  (114)
+
+	'*'  shift 89
+	'/'  shift 90
+	IDIV  shift 91
+	'%'  shift 92
+	IF  reduce 111
+	TIMES  reduce 111
+	UNLESS  reduce 111
+	AND  reduce 111
+	OR  reduce 111
+	PUBLIC  reduce 111
+	ABSTRACT  reduce 111
+	')'  reduce 111
+	'}'  reduce 111
+	'+'  reduce 111
+	'-'  reduce 111
+	';'  reduce 111
+	','  reduce 111
+	GE  reduce 111
+	'>'  reduce 111
+	LE  reduce 111
+	'<'  reduce 111
+	NE  reduce 111
+	EQ  reduce 111
+	ID  reduce 111
+	'@'  reduce 111
+
+	mulop  goto 93
+
+
+state 56
+	term : factor .  (115)
+
+	.  reduce 115
 
 
 state 57
-	vars : ',' . ID $$9 vars  (48)
-	vars : ',' . ID '=' expr $$10 vars  (50)
+	factor : incdec .  (120)
 
-	ID  shift 92
-	.  error
+	.  reduce 120
 
 
 state 58
-	decl : VAR ID ':' type $$6 vars .  (42)
+	decl : VAR ID ':' type '[' DEC_CONST . ']' $$7 vars separator  (45)
 
-	.  reduce 42
+	']'  shift 94
+	.  error
 
 
 state 59
-	field : '@' . ID ':' type attrs  (16)
-	field : '@' . ID ':' type '=' expr attrs  (17)
+	vars : ',' . ID $$9 vars  (49)
+	vars : ',' . ID '=' expr $$10 vars  (51)
 
-	ID  shift 93
+	ID  shift 95
 	.  error
 
 
 state 60
+	decl : VAR ID ':' type $$6 vars . separator  (43)
+
+	';'  shift 96
+	.  error
+
+	separator  goto 97
+
+
+state 61
+	field : '@' . ID ':' type attrs  (16)
+	field : '@' . ID ':' type '=' expr attrs  (17)
+
+	ID  shift 98
+	.  error
+
+
+state 62
 	bodyclass : '{' fields . meth_list '}'  (21)
 	meth_list : .  (7)
 	modifier : .  (11)
@@ -1075,408 +910,389 @@ state 60
 	'}'  reduce 7
 	ID  reduce 11
 
-	meth_list  goto 94
-	modifier  goto 95
-	methodef  goto 96
-	meth  goto 97
+	meth_list  goto 99
+	modifier  goto 100
+	methodef  goto 101
+	meth  goto 102
 
 
-state 61
+state 63
 	fields : field . fields  (14)
 	fields : .  (15)
 
-	'@'  shift 59
+	'@'  shift 61
 	PUBLIC  reduce 15
 	ABSTRACT  reduce 15
 	'}'  reduce 15
 	ID  reduce 15
 
-	fields  goto 98
-	field  goto 61
+	fields  goto 103
+	field  goto 63
 
 
-state 62
+state 64
 	func : FUNC ID $$4 '(' params ')' RIGHTARROW . type $$5 body  (27)
 
 	INT  shift 21
 	REAL  shift 22
 	BOOL  shift 23
-	ID  shift 24
+	STR  shift 24
+	ID  shift 25
 	.  error
 
-	type  goto 99
-
-
-state 63
-	params : formals type ID .  (28)
-	formals : formals type ID . ','  (30)
-
-	','  shift 100
-	')'  reduce 28
-
-
-state 64
-	not_expr : NOT comp_expr .  (107)
-
-	.  reduce 107
+	type  goto 104
 
 
 state 65
-	expr : expr . OR logAnd_expr  (103)
-	factor : '(' expr . ')'  (127)
+	params : formals ID ':' . type  (28)
+	formals : formals ID ':' . type ','  (30)
 
-	OR  shift 71
-	')'  shift 101
+	INT  shift 21
+	REAL  shift 22
+	BOOL  shift 23
+	STR  shift 24
+	ID  shift 25
 	.  error
+
+	type  goto 105
 
 
 state 66
-	factor : '-' DEC_CONST .  (134)
+	not_expr : NOT comp_expr .  (100)
+
+	.  reduce 100
+
+
+state 67
+	expr : expr . OR logAnd_expr  (96)
+	factor : '(' expr . ')'  (121)
+
+	OR  shift 73
+	')'  shift 106
+	.  error
+
+
+state 68
+	factor : '-' DEC_CONST .  (128)
+
+	.  reduce 128
+
+
+state 69
+	factor : '-' REAL_DEC_CONST .  (129)
+
+	.  reduce 129
+
+
+state 70
+	location : ID .  (95)
+
+	.  reduce 95
+
+
+state 71
+	incdec : INC location .  (132)
+
+	.  reduce 132
+
+
+state 72
+	incdec : DEC location .  (134)
 
 	.  reduce 134
 
 
-state 67
-	factor : '-' REAL_DEC_CONST .  (135)
-
-	.  reduce 135
-
-
-state 68
-	location : ID .  (102)
-
-	.  reduce 102
-
-
-state 69
-	incdec : INC location .  (137)
-
-	.  reduce 137
-
-
-state 70
-	incdec : DEC location .  (139)
-
-	.  reduce 139
-
-
-state 71
-	expr : expr OR . logAnd_expr  (103)
-
-	FALSE  shift 36
-	TRUE  shift 37
-	NOT  shift 38
-	DEC_CONST  shift 39
-	REAL_DEC_CONST  shift 40
-	'('  shift 41
-	'-'  shift 42
-	ID  shift 43
-	INC  shift 44
-	DEC  shift 45
-	.  error
-
-	logAnd_expr  goto 102
-	not_expr  goto 48
-	comp_expr  goto 49
-	location  goto 50
-	method  goto 51
-	add_expr  goto 52
-	term  goto 53
-	factor  goto 54
-	incdec  goto 55
-
-
-state 72
-	decl : VAR ID ':' type '=' expr $$8 . vars  (46)
-	vars : .  (51)
-
-	','  shift 57
-	$end  reduce 51
-	FALSE  reduce 51
-	TRUE  reduce 51
-	RETURN  reduce 51
-	IF  reduce 51
-	WHILE  reduce 51
-	BREAK  reduce 51
-	PRINT  reduce 51
-	READ  reduce 51
-	PRINTLN  reduce 51
-	NOT  reduce 51
-	PUTS  reduce 51
-	FUNC  reduce 51
-	CLASS  reduce 51
-	PUBLIC  reduce 51
-	ABSTRACT  reduce 51
-	VAR  reduce 51
-	DEC_CONST  reduce 51
-	REAL_DEC_CONST  reduce 51
-	'('  reduce 51
-	'{'  reduce 51
-	'}'  reduce 51
-	'-'  reduce 51
-	ID  reduce 51
-	INC  reduce 51
-	DEC  reduce 51
-
-	vars  goto 103
-
-
 state 73
-	logAnd_expr : logAnd_expr AND . not_expr  (105)
+	expr : expr OR . logAnd_expr  (96)
 
-	FALSE  shift 36
-	TRUE  shift 37
-	NOT  shift 38
-	DEC_CONST  shift 39
-	REAL_DEC_CONST  shift 40
-	'('  shift 41
-	'-'  shift 42
-	ID  shift 43
-	INC  shift 44
-	DEC  shift 45
+	FALSE  shift 37
+	TRUE  shift 38
+	NOT  shift 39
+	DEC_CONST  shift 40
+	LITERAL  shift 41
+	REAL_DEC_CONST  shift 42
+	'('  shift 43
+	'-'  shift 44
+	ID  shift 45
+	INC  shift 46
+	DEC  shift 47
 	.  error
 
-	not_expr  goto 104
-	comp_expr  goto 49
-	location  goto 50
-	method  goto 51
-	add_expr  goto 52
-	term  goto 53
-	factor  goto 54
-	incdec  goto 55
+	logAnd_expr  goto 107
+	not_expr  goto 50
+	comp_expr  goto 51
+	location  goto 52
+	method  goto 53
+	add_expr  goto 54
+	term  goto 55
+	factor  goto 56
+	incdec  goto 57
 
 
 state 74
-	incdec : location INC .  (136)
+	decl : VAR ID ':' type '=' expr $$8 . vars separator  (47)
+	vars : .  (52)
 
-	.  reduce 136
+	','  shift 59
+	';'  reduce 52
+
+	vars  goto 108
 
 
 state 75
-	incdec : location DEC .  (138)
+	logAnd_expr : logAnd_expr AND . not_expr  (98)
 
-	.  reduce 138
+	FALSE  shift 37
+	TRUE  shift 38
+	NOT  shift 39
+	DEC_CONST  shift 40
+	LITERAL  shift 41
+	REAL_DEC_CONST  shift 42
+	'('  shift 43
+	'-'  shift 44
+	ID  shift 45
+	INC  shift 46
+	DEC  shift 47
+	.  error
+
+	not_expr  goto 109
+	comp_expr  goto 51
+	location  goto 52
+	method  goto 53
+	add_expr  goto 54
+	term  goto 55
+	factor  goto 56
+	incdec  goto 57
 
 
 state 76
-	factor : method '(' . actuals ')'  (133)
-	actuals : .  (141)
-	args : .  (143)
+	incdec : location INC .  (131)
 
-	FALSE  reduce 143
-	TRUE  reduce 143
-	NOT  reduce 143
-	DEC_CONST  reduce 143
-	REAL_DEC_CONST  reduce 143
-	'('  reduce 143
-	')'  reduce 141
-	'-'  reduce 143
-	ID  reduce 143
-	INC  reduce 143
-	DEC  reduce 143
-
-	actuals  goto 105
-	args  goto 106
+	.  reduce 131
 
 
 state 77
-	addop : '+' .  (119)
+	incdec : location DEC .  (133)
 
-	.  reduce 119
+	.  reduce 133
 
 
 state 78
-	addop : '-' .  (120)
+	factor : method '(' . actuals ')'  (127)
+	actuals : .  (136)
+	args : .  (138)
 
-	.  reduce 120
+	FALSE  reduce 138
+	TRUE  reduce 138
+	NOT  reduce 138
+	DEC_CONST  reduce 138
+	LITERAL  reduce 138
+	REAL_DEC_CONST  reduce 138
+	'('  reduce 138
+	')'  reduce 136
+	'-'  reduce 138
+	ID  reduce 138
+	INC  reduce 138
+	DEC  reduce 138
+
+	actuals  goto 110
+	args  goto 111
 
 
 state 79
-	relop : GE .  (111)
-
-	.  reduce 111
-
-
-state 80
-	relop : '>' .  (112)
+	addop : '+' .  (112)
 
 	.  reduce 112
 
 
-state 81
-	relop : LE .  (113)
+state 80
+	addop : '-' .  (113)
 
 	.  reduce 113
 
 
-state 82
-	relop : '<' .  (114)
+state 81
+	relop : GE .  (104)
 
-	.  reduce 114
+	.  reduce 104
+
+
+state 82
+	relop : '>' .  (105)
+
+	.  reduce 105
 
 
 state 83
-	relop : NE .  (115)
+	relop : LE .  (106)
 
-	.  reduce 115
+	.  reduce 106
 
 
 state 84
-	relop : EQ .  (116)
+	relop : '<' .  (107)
+
+	.  reduce 107
+
+
+state 85
+	relop : NE .  (108)
+
+	.  reduce 108
+
+
+state 86
+	relop : EQ .  (109)
+
+	.  reduce 109
+
+
+state 87
+	comp_expr : add_expr relop . add_expr  (102)
+
+	FALSE  shift 37
+	TRUE  shift 38
+	DEC_CONST  shift 40
+	LITERAL  shift 41
+	REAL_DEC_CONST  shift 42
+	'('  shift 43
+	'-'  shift 44
+	ID  shift 45
+	INC  shift 46
+	DEC  shift 47
+	.  error
+
+	location  goto 52
+	method  goto 53
+	add_expr  goto 112
+	term  goto 55
+	factor  goto 56
+	incdec  goto 57
+
+
+state 88
+	add_expr : add_expr addop . term  (110)
+
+	FALSE  shift 37
+	TRUE  shift 38
+	DEC_CONST  shift 40
+	LITERAL  shift 41
+	REAL_DEC_CONST  shift 42
+	'('  shift 43
+	'-'  shift 44
+	ID  shift 45
+	INC  shift 46
+	DEC  shift 47
+	.  error
+
+	location  goto 52
+	method  goto 53
+	term  goto 113
+	factor  goto 56
+	incdec  goto 57
+
+
+state 89
+	mulop : '*' .  (116)
 
 	.  reduce 116
 
 
-state 85
-	comp_expr : add_expr relop . add_expr  (109)
-
-	FALSE  shift 36
-	TRUE  shift 37
-	DEC_CONST  shift 39
-	REAL_DEC_CONST  shift 40
-	'('  shift 41
-	'-'  shift 42
-	ID  shift 43
-	INC  shift 44
-	DEC  shift 45
-	.  error
-
-	location  goto 50
-	method  goto 51
-	add_expr  goto 107
-	term  goto 53
-	factor  goto 54
-	incdec  goto 55
-
-
-state 86
-	add_expr : add_expr addop . term  (117)
-
-	FALSE  shift 36
-	TRUE  shift 37
-	DEC_CONST  shift 39
-	REAL_DEC_CONST  shift 40
-	'('  shift 41
-	'-'  shift 42
-	ID  shift 43
-	INC  shift 44
-	DEC  shift 45
-	.  error
-
-	location  goto 50
-	method  goto 51
-	term  goto 108
-	factor  goto 54
-	incdec  goto 55
-
-
-state 87
-	mulop : '*' .  (123)
-
-	.  reduce 123
-
-
-state 88
-	mulop : '/' .  (124)
-
-	.  reduce 124
-
-
-state 89
-	mulop : '%' .  (125)
-
-	.  reduce 125
-
-
 state 90
-	term : term mulop . factor  (121)
+	mulop : '/' .  (117)
 
-	FALSE  shift 36
-	TRUE  shift 37
-	DEC_CONST  shift 39
-	REAL_DEC_CONST  shift 40
-	'('  shift 41
-	'-'  shift 42
-	ID  shift 43
-	INC  shift 44
-	DEC  shift 45
-	.  error
-
-	location  goto 50
-	method  goto 51
-	factor  goto 109
-	incdec  goto 55
+	.  reduce 117
 
 
 state 91
-	decl : VAR ID ':' type '[' DEC_CONST ']' . $$7 vars  (44)
-	$$7 : .  (43)
+	mulop : IDIV .  (118)
 
-	.  reduce 43
-
-	$$7  goto 110
+	.  reduce 118
 
 
 state 92
-	vars : ',' ID . $$9 vars  (48)
-	vars : ',' ID . '=' expr $$10 vars  (50)
-	$$9 : .  (47)
+	mulop : '%' .  (119)
 
-	'='  shift 111
-	$end  reduce 47
-	FALSE  reduce 47
-	TRUE  reduce 47
-	RETURN  reduce 47
-	IF  reduce 47
-	WHILE  reduce 47
-	BREAK  reduce 47
-	PRINT  reduce 47
-	READ  reduce 47
-	PRINTLN  reduce 47
-	NOT  reduce 47
-	PUTS  reduce 47
-	FUNC  reduce 47
-	CLASS  reduce 47
-	PUBLIC  reduce 47
-	ABSTRACT  reduce 47
-	VAR  reduce 47
-	DEC_CONST  reduce 47
-	REAL_DEC_CONST  reduce 47
-	'('  reduce 47
-	'{'  reduce 47
-	'}'  reduce 47
-	'-'  reduce 47
-	','  reduce 47
-	ID  reduce 47
-	INC  reduce 47
-	DEC  reduce 47
-
-	$$9  goto 112
+	.  reduce 119
 
 
 state 93
-	field : '@' ID . ':' type attrs  (16)
-	field : '@' ID . ':' type '=' expr attrs  (17)
+	term : term mulop . factor  (114)
 
-	':'  shift 113
+	FALSE  shift 37
+	TRUE  shift 38
+	DEC_CONST  shift 40
+	LITERAL  shift 41
+	REAL_DEC_CONST  shift 42
+	'('  shift 43
+	'-'  shift 44
+	ID  shift 45
+	INC  shift 46
+	DEC  shift 47
 	.  error
+
+	location  goto 52
+	method  goto 53
+	factor  goto 114
+	incdec  goto 57
 
 
 state 94
-	bodyclass : '{' fields meth_list . '}'  (21)
+	decl : VAR ID ':' type '[' DEC_CONST ']' . $$7 vars separator  (45)
+	$$7 : .  (44)
 
-	'}'  shift 114
-	.  error
+	.  reduce 44
+
+	$$7  goto 115
 
 
 state 95
-	meth : modifier . ID $$2 '(' params ')' RIGHTARROW type $$3 body  (24)
+	vars : ',' ID . $$9 vars  (49)
+	vars : ',' ID . '=' expr $$10 vars  (51)
+	$$9 : .  (48)
 
-	ID  shift 115
-	.  error
+	'='  shift 116
+	';'  reduce 48
+	','  reduce 48
+
+	$$9  goto 117
 
 
 state 96
+	separator : ';' .  (83)
+
+	.  reduce 83
+
+
+state 97
+	decl : VAR ID ':' type $$6 vars separator .  (43)
+
+	.  reduce 43
+
+
+state 98
+	field : '@' ID . ':' type attrs  (16)
+	field : '@' ID . ':' type '=' expr attrs  (17)
+
+	':'  shift 118
+	.  error
+
+
+state 99
+	bodyclass : '{' fields meth_list . '}'  (21)
+
+	'}'  shift 119
+	.  error
+
+
+state 100
+	meth : modifier . ID $$2 '(' params ')' RIGHTARROW type $$3 body  (24)
+
+	ID  shift 120
+	.  error
+
+
+state 101
 	meth_list : methodef . meth_list  (6)
 	meth_list : .  (7)
 	modifier : .  (11)
@@ -1486,466 +1302,575 @@ state 96
 	'}'  reduce 7
 	ID  reduce 11
 
-	meth_list  goto 116
-	modifier  goto 95
-	methodef  goto 96
-	meth  goto 97
+	meth_list  goto 121
+	modifier  goto 100
+	methodef  goto 101
+	meth  goto 102
 
 
-state 97
+state 102
 	methodef : meth .  (8)
 
 	.  reduce 8
 
 
-state 98
+state 103
 	fields : field fields .  (14)
 
 	.  reduce 14
 
 
-state 99
+state 104
 	func : FUNC ID $$4 '(' params ')' RIGHTARROW type . $$5 body  (27)
 	$$5 : .  (26)
 
 	.  reduce 26
 
-	$$5  goto 117
-
-
-state 100
-	formals : formals type ID ',' .  (30)
-
-	.  reduce 30
-
-
-state 101
-	factor : '(' expr ')' .  (127)
-
-	.  reduce 127
-
-
-state 102
-	expr : expr OR logAnd_expr .  (103)
-	logAnd_expr : logAnd_expr . AND not_expr  (105)
-
-	AND  shift 73
-	$end  reduce 103
-	FALSE  reduce 103
-	TRUE  reduce 103
-	RETURN  reduce 103
-	IF  reduce 103
-	ELSE  reduce 103
-	WHILE  reduce 103
-	BREAK  reduce 103
-	PRINT  reduce 103
-	READ  reduce 103
-	PRINTLN  reduce 103
-	TIMES  reduce 103
-	UNLESS  reduce 103
-	NOT  reduce 103
-	OR  reduce 103
-	PUTS  reduce 103
-	FUNC  reduce 103
-	CLASS  reduce 103
-	PUBLIC  reduce 103
-	ABSTRACT  reduce 103
-	VAR  reduce 103
-	DEC_CONST  reduce 103
-	REAL_DEC_CONST  reduce 103
-	'('  reduce 103
-	')'  reduce 103
-	'{'  reduce 103
-	'}'  reduce 103
-	'-'  reduce 103
-	','  reduce 103
-	ID  reduce 103
-	INC  reduce 103
-	DEC  reduce 103
-	'@'  reduce 103
-
-
-state 103
-	decl : VAR ID ':' type '=' expr $$8 vars .  (46)
-
-	.  reduce 46
-
-
-state 104
-	logAnd_expr : logAnd_expr AND not_expr .  (105)
-
-	.  reduce 105
+	$$5  goto 122
 
 
 state 105
-	factor : method '(' actuals . ')'  (133)
+	params : formals ID ':' type .  (28)
+	formals : formals ID ':' type . ','  (30)
 
-	')'  shift 118
-	.  error
+	','  shift 123
+	')'  reduce 28
 
 
 state 106
-	actuals : args . expr  (140)
-	args : args . expr ','  (142)
-
-	FALSE  shift 36
-	TRUE  shift 37
-	NOT  shift 38
-	DEC_CONST  shift 39
-	REAL_DEC_CONST  shift 40
-	'('  shift 41
-	'-'  shift 42
-	ID  shift 43
-	INC  shift 44
-	DEC  shift 45
-	.  error
-
-	expr  goto 119
-	logAnd_expr  goto 47
-	not_expr  goto 48
-	comp_expr  goto 49
-	location  goto 50
-	method  goto 51
-	add_expr  goto 52
-	term  goto 53
-	factor  goto 54
-	incdec  goto 55
-
-
-107: shift/reduce conflict (shift 78, reduce 109) on '-'
-state 107
-	comp_expr : add_expr relop add_expr .  (109)
-	add_expr : add_expr . addop term  (117)
-
-	'+'  shift 77
-	'-'  shift 78
-	$end  reduce 109
-	FALSE  reduce 109
-	TRUE  reduce 109
-	RETURN  reduce 109
-	IF  reduce 109
-	ELSE  reduce 109
-	WHILE  reduce 109
-	BREAK  reduce 109
-	PRINT  reduce 109
-	READ  reduce 109
-	PRINTLN  reduce 109
-	TIMES  reduce 109
-	UNLESS  reduce 109
-	NOT  reduce 109
-	AND  reduce 109
-	OR  reduce 109
-	PUTS  reduce 109
-	FUNC  reduce 109
-	CLASS  reduce 109
-	PUBLIC  reduce 109
-	ABSTRACT  reduce 109
-	VAR  reduce 109
-	DEC_CONST  reduce 109
-	REAL_DEC_CONST  reduce 109
-	'('  reduce 109
-	')'  reduce 109
-	'{'  reduce 109
-	'}'  reduce 109
-	','  reduce 109
-	ID  reduce 109
-	INC  reduce 109
-	DEC  reduce 109
-	'@'  reduce 109
-
-	addop  goto 86
-
-
-state 108
-	add_expr : add_expr addop term .  (117)
-	term : term . mulop factor  (121)
-
-	'*'  shift 87
-	'/'  shift 88
-	'%'  shift 89
-	$end  reduce 117
-	FALSE  reduce 117
-	TRUE  reduce 117
-	RETURN  reduce 117
-	IF  reduce 117
-	ELSE  reduce 117
-	WHILE  reduce 117
-	BREAK  reduce 117
-	PRINT  reduce 117
-	READ  reduce 117
-	PRINTLN  reduce 117
-	TIMES  reduce 117
-	UNLESS  reduce 117
-	NOT  reduce 117
-	AND  reduce 117
-	OR  reduce 117
-	PUTS  reduce 117
-	FUNC  reduce 117
-	CLASS  reduce 117
-	PUBLIC  reduce 117
-	ABSTRACT  reduce 117
-	VAR  reduce 117
-	DEC_CONST  reduce 117
-	REAL_DEC_CONST  reduce 117
-	'('  reduce 117
-	')'  reduce 117
-	'{'  reduce 117
-	'}'  reduce 117
-	'+'  reduce 117
-	'-'  reduce 117
-	','  reduce 117
-	GE  reduce 117
-	'>'  reduce 117
-	LE  reduce 117
-	'<'  reduce 117
-	NE  reduce 117
-	EQ  reduce 117
-	ID  reduce 117
-	INC  reduce 117
-	DEC  reduce 117
-	'@'  reduce 117
-
-	mulop  goto 90
-
-
-state 109
-	term : term mulop factor .  (121)
+	factor : '(' expr ')' .  (121)
 
 	.  reduce 121
 
 
+state 107
+	expr : expr OR logAnd_expr .  (96)
+	logAnd_expr : logAnd_expr . AND not_expr  (98)
+
+	AND  shift 75
+	IF  reduce 96
+	TIMES  reduce 96
+	UNLESS  reduce 96
+	OR  reduce 96
+	PUBLIC  reduce 96
+	ABSTRACT  reduce 96
+	')'  reduce 96
+	'}'  reduce 96
+	';'  reduce 96
+	','  reduce 96
+	ID  reduce 96
+	'@'  reduce 96
+
+
+state 108
+	decl : VAR ID ':' type '=' expr $$8 vars . separator  (47)
+
+	';'  shift 96
+	.  error
+
+	separator  goto 124
+
+
+state 109
+	logAnd_expr : logAnd_expr AND not_expr .  (98)
+
+	.  reduce 98
+
+
 state 110
-	decl : VAR ID ':' type '[' DEC_CONST ']' $$7 . vars  (44)
-	vars : .  (51)
+	factor : method '(' actuals . ')'  (127)
 
-	','  shift 57
-	$end  reduce 51
-	FALSE  reduce 51
-	TRUE  reduce 51
-	RETURN  reduce 51
-	IF  reduce 51
-	WHILE  reduce 51
-	BREAK  reduce 51
-	PRINT  reduce 51
-	READ  reduce 51
-	PRINTLN  reduce 51
-	NOT  reduce 51
-	PUTS  reduce 51
-	FUNC  reduce 51
-	CLASS  reduce 51
-	PUBLIC  reduce 51
-	ABSTRACT  reduce 51
-	VAR  reduce 51
-	DEC_CONST  reduce 51
-	REAL_DEC_CONST  reduce 51
-	'('  reduce 51
-	'{'  reduce 51
-	'}'  reduce 51
-	'-'  reduce 51
-	ID  reduce 51
-	INC  reduce 51
-	DEC  reduce 51
-
-	vars  goto 120
+	')'  shift 125
+	.  error
 
 
 state 111
-	vars : ',' ID '=' . expr $$10 vars  (50)
+	actuals : args . expr  (135)
+	args : args . expr ','  (137)
 
-	FALSE  shift 36
-	TRUE  shift 37
-	NOT  shift 38
-	DEC_CONST  shift 39
-	REAL_DEC_CONST  shift 40
-	'('  shift 41
-	'-'  shift 42
-	ID  shift 43
-	INC  shift 44
-	DEC  shift 45
+	FALSE  shift 37
+	TRUE  shift 38
+	NOT  shift 39
+	DEC_CONST  shift 40
+	LITERAL  shift 41
+	REAL_DEC_CONST  shift 42
+	'('  shift 43
+	'-'  shift 44
+	ID  shift 45
+	INC  shift 46
+	DEC  shift 47
 	.  error
 
-	expr  goto 121
-	logAnd_expr  goto 47
-	not_expr  goto 48
-	comp_expr  goto 49
-	location  goto 50
-	method  goto 51
-	add_expr  goto 52
-	term  goto 53
-	factor  goto 54
-	incdec  goto 55
+	expr  goto 126
+	logAnd_expr  goto 49
+	not_expr  goto 50
+	comp_expr  goto 51
+	location  goto 52
+	method  goto 53
+	add_expr  goto 54
+	term  goto 55
+	factor  goto 56
+	incdec  goto 57
 
 
 state 112
-	vars : ',' ID $$9 . vars  (48)
-	vars : .  (51)
+	comp_expr : add_expr relop add_expr .  (102)
+	add_expr : add_expr . addop term  (110)
 
-	','  shift 57
-	$end  reduce 51
-	FALSE  reduce 51
-	TRUE  reduce 51
-	RETURN  reduce 51
-	IF  reduce 51
-	WHILE  reduce 51
-	BREAK  reduce 51
-	PRINT  reduce 51
-	READ  reduce 51
-	PRINTLN  reduce 51
-	NOT  reduce 51
-	PUTS  reduce 51
-	FUNC  reduce 51
-	CLASS  reduce 51
-	PUBLIC  reduce 51
-	ABSTRACT  reduce 51
-	VAR  reduce 51
-	DEC_CONST  reduce 51
-	REAL_DEC_CONST  reduce 51
-	'('  reduce 51
-	'{'  reduce 51
-	'}'  reduce 51
-	'-'  reduce 51
-	ID  reduce 51
-	INC  reduce 51
-	DEC  reduce 51
+	'+'  shift 79
+	'-'  shift 80
+	IF  reduce 102
+	TIMES  reduce 102
+	UNLESS  reduce 102
+	AND  reduce 102
+	OR  reduce 102
+	PUBLIC  reduce 102
+	ABSTRACT  reduce 102
+	')'  reduce 102
+	'}'  reduce 102
+	';'  reduce 102
+	','  reduce 102
+	ID  reduce 102
+	'@'  reduce 102
 
-	vars  goto 122
+	addop  goto 88
 
 
 state 113
+	add_expr : add_expr addop term .  (110)
+	term : term . mulop factor  (114)
+
+	'*'  shift 89
+	'/'  shift 90
+	IDIV  shift 91
+	'%'  shift 92
+	IF  reduce 110
+	TIMES  reduce 110
+	UNLESS  reduce 110
+	AND  reduce 110
+	OR  reduce 110
+	PUBLIC  reduce 110
+	ABSTRACT  reduce 110
+	')'  reduce 110
+	'}'  reduce 110
+	'+'  reduce 110
+	'-'  reduce 110
+	';'  reduce 110
+	','  reduce 110
+	GE  reduce 110
+	'>'  reduce 110
+	LE  reduce 110
+	'<'  reduce 110
+	NE  reduce 110
+	EQ  reduce 110
+	ID  reduce 110
+	'@'  reduce 110
+
+	mulop  goto 93
+
+
+state 114
+	term : term mulop factor .  (114)
+
+	.  reduce 114
+
+
+state 115
+	decl : VAR ID ':' type '[' DEC_CONST ']' $$7 . vars separator  (45)
+	vars : .  (52)
+
+	','  shift 59
+	';'  reduce 52
+
+	vars  goto 127
+
+
+state 116
+	vars : ',' ID '=' . expr $$10 vars  (51)
+
+	FALSE  shift 37
+	TRUE  shift 38
+	NOT  shift 39
+	DEC_CONST  shift 40
+	LITERAL  shift 41
+	REAL_DEC_CONST  shift 42
+	'('  shift 43
+	'-'  shift 44
+	ID  shift 45
+	INC  shift 46
+	DEC  shift 47
+	.  error
+
+	expr  goto 128
+	logAnd_expr  goto 49
+	not_expr  goto 50
+	comp_expr  goto 51
+	location  goto 52
+	method  goto 53
+	add_expr  goto 54
+	term  goto 55
+	factor  goto 56
+	incdec  goto 57
+
+
+state 117
+	vars : ',' ID $$9 . vars  (49)
+	vars : .  (52)
+
+	','  shift 59
+	';'  reduce 52
+
+	vars  goto 129
+
+
+state 118
 	field : '@' ID ':' . type attrs  (16)
 	field : '@' ID ':' . type '=' expr attrs  (17)
 
 	INT  shift 21
 	REAL  shift 22
 	BOOL  shift 23
-	ID  shift 24
+	STR  shift 24
+	ID  shift 25
 	.  error
 
-	type  goto 123
+	type  goto 130
 
 
-state 114
+state 119
 	bodyclass : '{' fields meth_list '}' .  (21)
 
 	.  reduce 21
 
 
-state 115
+state 120
 	meth : modifier ID . $$2 '(' params ')' RIGHTARROW type $$3 body  (24)
 	$$2 : .  (22)
 
 	.  reduce 22
 
-	$$2  goto 124
+	$$2  goto 131
 
 
-state 116
+state 121
 	meth_list : methodef meth_list .  (6)
 
 	.  reduce 6
 
 
-state 117
+state 122
 	func : FUNC ID $$4 '(' params ')' RIGHTARROW type $$5 . body  (27)
 
-	'{'  shift 125
+	'{'  shift 132
 	.  error
 
-	body  goto 126
-
-
-state 118
-	factor : method '(' actuals ')' .  (133)
-
-	.  reduce 133
-
-
-state 119
-	expr : expr . OR logAnd_expr  (103)
-	actuals : args expr .  (140)
-	args : args expr . ','  (142)
-
-	OR  shift 71
-	','  shift 127
-	')'  reduce 140
-
-
-state 120
-	decl : VAR ID ':' type '[' DEC_CONST ']' $$7 vars .  (44)
-
-	.  reduce 44
-
-
-state 121
-	vars : ',' ID '=' expr . $$10 vars  (50)
-	expr : expr . OR logAnd_expr  (103)
-	$$10 : .  (49)
-
-	OR  shift 71
-	$end  reduce 49
-	FALSE  reduce 49
-	TRUE  reduce 49
-	RETURN  reduce 49
-	IF  reduce 49
-	WHILE  reduce 49
-	BREAK  reduce 49
-	PRINT  reduce 49
-	READ  reduce 49
-	PRINTLN  reduce 49
-	NOT  reduce 49
-	PUTS  reduce 49
-	FUNC  reduce 49
-	CLASS  reduce 49
-	PUBLIC  reduce 49
-	ABSTRACT  reduce 49
-	VAR  reduce 49
-	DEC_CONST  reduce 49
-	REAL_DEC_CONST  reduce 49
-	'('  reduce 49
-	'{'  reduce 49
-	'}'  reduce 49
-	'-'  reduce 49
-	','  reduce 49
-	ID  reduce 49
-	INC  reduce 49
-	DEC  reduce 49
-
-	$$10  goto 128
-
-
-state 122
-	vars : ',' ID $$9 vars .  (48)
-
-	.  reduce 48
+	body  goto 133
 
 
 state 123
+	formals : formals ID ':' type ',' .  (30)
+
+	.  reduce 30
+
+
+state 124
+	decl : VAR ID ':' type '=' expr $$8 vars separator .  (47)
+
+	.  reduce 47
+
+
+state 125
+	factor : method '(' actuals ')' .  (127)
+
+	.  reduce 127
+
+
+state 126
+	expr : expr . OR logAnd_expr  (96)
+	actuals : args expr .  (135)
+	args : args expr . ','  (137)
+
+	OR  shift 73
+	','  shift 134
+	')'  reduce 135
+
+
+state 127
+	decl : VAR ID ':' type '[' DEC_CONST ']' $$7 vars . separator  (45)
+
+	';'  shift 96
+	.  error
+
+	separator  goto 135
+
+
+state 128
+	vars : ',' ID '=' expr . $$10 vars  (51)
+	expr : expr . OR logAnd_expr  (96)
+	$$10 : .  (50)
+
+	OR  shift 73
+	';'  reduce 50
+	','  reduce 50
+
+	$$10  goto 136
+
+
+state 129
+	vars : ',' ID $$9 vars .  (49)
+
+	.  reduce 49
+
+
+state 130
 	field : '@' ID ':' type . attrs  (16)
 	field : '@' ID ':' type . '=' expr attrs  (17)
 	attrs : .  (20)
 
-	'='  shift 129
-	','  shift 130
+	'='  shift 137
+	','  shift 138
 	PUBLIC  reduce 20
 	ABSTRACT  reduce 20
 	'}'  reduce 20
 	ID  reduce 20
 	'@'  reduce 20
 
-	attrs  goto 131
+	attrs  goto 139
 
 
-state 124
+state 131
 	meth : modifier ID $$2 . '(' params ')' RIGHTARROW type $$3 body  (24)
 
-	'('  shift 132
+	'('  shift 140
 	.  error
 
 
-state 125
-	body : '{' . decls stmts '}'  (36)
-	decls : .  (38)
-	decl_list : .  (40)
+state 132
+	body : '{' . decls stmts '}'  (37)
+	decls : .  (39)
+	decl_list : .  (41)
+
+	FALSE  reduce 39
+	TRUE  reduce 39
+	RETURN  reduce 39
+	IF  reduce 39
+	WHILE  reduce 39
+	BREAK  reduce 39
+	READ  reduce 39
+	PRINTLN  reduce 39
+	NOT  reduce 39
+	VAR  reduce 41
+	DEC_CONST  reduce 39
+	LITERAL  reduce 39
+	REAL_DEC_CONST  reduce 39
+	'('  reduce 39
+	'{'  reduce 39
+	'}'  reduce 39
+	'-'  reduce 39
+	';'  reduce 39
+	ID  reduce 39
+	INC  reduce 39
+	DEC  reduce 39
+
+	decls  goto 141
+	decl_list  goto 142
+
+
+state 133
+	func : FUNC ID $$4 '(' params ')' RIGHTARROW type $$5 body .  (27)
+
+	.  reduce 27
+
+
+state 134
+	args : args expr ',' .  (137)
+
+	.  reduce 137
+
+
+state 135
+	decl : VAR ID ':' type '[' DEC_CONST ']' $$7 vars separator .  (45)
+
+	.  reduce 45
+
+
+state 136
+	vars : ',' ID '=' expr $$10 . vars  (51)
+	vars : .  (52)
+
+	','  shift 59
+	';'  reduce 52
+
+	vars  goto 143
+
+
+state 137
+	field : '@' ID ':' type '=' . expr attrs  (17)
+
+	FALSE  shift 37
+	TRUE  shift 38
+	NOT  shift 39
+	DEC_CONST  shift 40
+	LITERAL  shift 41
+	REAL_DEC_CONST  shift 42
+	'('  shift 43
+	'-'  shift 44
+	ID  shift 45
+	INC  shift 46
+	DEC  shift 47
+	.  error
+
+	expr  goto 144
+	logAnd_expr  goto 49
+	not_expr  goto 50
+	comp_expr  goto 51
+	location  goto 52
+	method  goto 53
+	add_expr  goto 54
+	term  goto 55
+	factor  goto 56
+	incdec  goto 57
+
+
+state 138
+	attrs : ',' . ID attrs  (18)
+	attrs : ',' . ID '=' expr attrs  (19)
+
+	ID  shift 145
+	.  error
+
+
+state 139
+	field : '@' ID ':' type attrs .  (16)
+
+	.  reduce 16
+
+
+state 140
+	meth : modifier ID $$2 '(' . params ')' RIGHTARROW type $$3 body  (24)
+	params : .  (29)
+	formals : .  (31)
+
+	')'  reduce 29
+	ID  reduce 31
+
+	params  goto 146
+	formals  goto 29
+
+
+state 141
+	body : '{' decls . stmts '}'  (37)
+	stmts : .  (54)
+
+	.  reduce 54
+
+	stmts  goto 147
+
+
+state 142
+	decls : decl_list . decl  (38)
+	decl_list : decl_list . decl  (40)
+
+	VAR  shift 4
+	.  error
+
+	decl  goto 148
+
+
+state 143
+	vars : ',' ID '=' expr $$10 vars .  (51)
+
+	.  reduce 51
+
+
+state 144
+	field : '@' ID ':' type '=' expr . attrs  (17)
+	expr : expr . OR logAnd_expr  (96)
+	attrs : .  (20)
+
+	OR  shift 73
+	','  shift 138
+	PUBLIC  reduce 20
+	ABSTRACT  reduce 20
+	'}'  reduce 20
+	ID  reduce 20
+	'@'  reduce 20
+
+	attrs  goto 149
+
+
+state 145
+	attrs : ',' ID . attrs  (18)
+	attrs : ',' ID . '=' expr attrs  (19)
+	attrs : .  (20)
+
+	'='  shift 150
+	','  shift 138
+	PUBLIC  reduce 20
+	ABSTRACT  reduce 20
+	'}'  reduce 20
+	ID  reduce 20
+	'@'  reduce 20
+
+	attrs  goto 151
+
+
+state 146
+	meth : modifier ID $$2 '(' params . ')' RIGHTARROW type $$3 body  (24)
+
+	')'  shift 152
+	.  error
+
+
+state 147
+	body : '{' decls stmts . '}'  (37)
+	stmts : stmts . stmt  (53)
+
+	FALSE  shift 37
+	TRUE  shift 38
+	RETURN  shift 153
+	IF  shift 154
+	WHILE  shift 155
+	BREAK  shift 156
+	READ  shift 157
+	PRINTLN  shift 158
+	NOT  shift 39
+	DEC_CONST  shift 40
+	LITERAL  shift 41
+	REAL_DEC_CONST  shift 42
+	'('  shift 43
+	'{'  shift 159
+	'}'  shift 160
+	'-'  shift 44
+	';'  shift 96
+	ID  shift 45
+	INC  shift 46
+	DEC  shift 47
+	.  error
+
+	stmt  goto 161
+	block  goto 162
+	singlestmt  goto 163
+	separator  goto 164
+	expr  goto 165
+	logAnd_expr  goto 49
+	not_expr  goto 50
+	comp_expr  goto 51
+	addassign  goto 166
+	subassign  goto 167
+	assign  goto 168
+	location  goto 169
+	method  goto 53
+	listedassign  goto 170
+	add_expr  goto 54
+	term  goto 55
+	factor  goto 56
+	incdec  goto 57
+
+
+state 148
+	decls : decl_list decl .  (38)
+	decl_list : decl_list decl .  (40)
 
 	FALSE  reduce 38
 	TRUE  reduce 38
@@ -1953,2008 +1878,1311 @@ state 125
 	IF  reduce 38
 	WHILE  reduce 38
 	BREAK  reduce 38
-	PRINT  reduce 38
 	READ  reduce 38
 	PRINTLN  reduce 38
 	NOT  reduce 38
-	PUTS  reduce 38
 	VAR  reduce 40
 	DEC_CONST  reduce 38
+	LITERAL  reduce 38
 	REAL_DEC_CONST  reduce 38
 	'('  reduce 38
 	'{'  reduce 38
 	'}'  reduce 38
 	'-'  reduce 38
+	';'  reduce 38
 	ID  reduce 38
 	INC  reduce 38
 	DEC  reduce 38
 
-	decls  goto 133
-	decl_list  goto 134
 
-
-state 126
-	func : FUNC ID $$4 '(' params ')' RIGHTARROW type $$5 body .  (27)
-
-	.  reduce 27
-
-
-state 127
-	args : args expr ',' .  (142)
-
-	.  reduce 142
-
-
-state 128
-	vars : ',' ID '=' expr $$10 . vars  (50)
-	vars : .  (51)
-
-	','  shift 57
-	$end  reduce 51
-	FALSE  reduce 51
-	TRUE  reduce 51
-	RETURN  reduce 51
-	IF  reduce 51
-	WHILE  reduce 51
-	BREAK  reduce 51
-	PRINT  reduce 51
-	READ  reduce 51
-	PRINTLN  reduce 51
-	NOT  reduce 51
-	PUTS  reduce 51
-	FUNC  reduce 51
-	CLASS  reduce 51
-	PUBLIC  reduce 51
-	ABSTRACT  reduce 51
-	VAR  reduce 51
-	DEC_CONST  reduce 51
-	REAL_DEC_CONST  reduce 51
-	'('  reduce 51
-	'{'  reduce 51
-	'}'  reduce 51
-	'-'  reduce 51
-	ID  reduce 51
-	INC  reduce 51
-	DEC  reduce 51
-
-	vars  goto 135
-
-
-state 129
-	field : '@' ID ':' type '=' . expr attrs  (17)
-
-	FALSE  shift 36
-	TRUE  shift 37
-	NOT  shift 38
-	DEC_CONST  shift 39
-	REAL_DEC_CONST  shift 40
-	'('  shift 41
-	'-'  shift 42
-	ID  shift 43
-	INC  shift 44
-	DEC  shift 45
-	.  error
-
-	expr  goto 136
-	logAnd_expr  goto 47
-	not_expr  goto 48
-	comp_expr  goto 49
-	location  goto 50
-	method  goto 51
-	add_expr  goto 52
-	term  goto 53
-	factor  goto 54
-	incdec  goto 55
-
-
-state 130
-	attrs : ',' . ID attrs  (18)
-	attrs : ',' . ID '=' expr attrs  (19)
-
-	ID  shift 137
-	.  error
-
-
-state 131
-	field : '@' ID ':' type attrs .  (16)
-
-	.  reduce 16
-
-
-state 132
-	meth : modifier ID $$2 '(' . params ')' RIGHTARROW type $$3 body  (24)
-	params : .  (29)
-	formals : .  (31)
-
-	INT  reduce 31
-	REAL  reduce 31
-	BOOL  reduce 31
-	')'  reduce 29
-	ID  reduce 31
-
-	params  goto 138
-	formals  goto 28
-
-
-state 133
-	body : '{' decls . stmts '}'  (36)
-	stmts : .  (53)
-
-	.  reduce 53
-
-	stmts  goto 139
-
-
-state 134
-	decls : decl_list . decl  (37)
-	decl_list : decl_list . decl  (39)
-
-	VAR  shift 4
-	.  error
-
-	decl  goto 140
-
-
-state 135
-	vars : ',' ID '=' expr $$10 vars .  (50)
-
-	.  reduce 50
-
-
-state 136
-	field : '@' ID ':' type '=' expr . attrs  (17)
-	expr : expr . OR logAnd_expr  (103)
-	attrs : .  (20)
-
-	OR  shift 71
-	','  shift 130
-	PUBLIC  reduce 20
-	ABSTRACT  reduce 20
-	'}'  reduce 20
-	ID  reduce 20
-	'@'  reduce 20
-
-	attrs  goto 141
-
-
-state 137
-	attrs : ',' ID . attrs  (18)
-	attrs : ',' ID . '=' expr attrs  (19)
-	attrs : .  (20)
-
-	'='  shift 142
-	','  shift 130
-	PUBLIC  reduce 20
-	ABSTRACT  reduce 20
-	'}'  reduce 20
-	ID  reduce 20
-	'@'  reduce 20
-
-	attrs  goto 143
-
-
-state 138
-	meth : modifier ID $$2 '(' params . ')' RIGHTARROW type $$3 body  (24)
-
-	')'  shift 144
-	.  error
-
-
-state 139
-	body : '{' decls stmts . '}'  (36)
-	stmts : stmts . stmt  (52)
-
-	FALSE  shift 36
-	TRUE  shift 37
-	RETURN  shift 145
-	IF  shift 146
-	WHILE  shift 147
-	BREAK  shift 148
-	PRINT  shift 149
-	READ  shift 150
-	PRINTLN  shift 151
-	NOT  shift 38
-	PUTS  shift 152
-	DEC_CONST  shift 39
-	REAL_DEC_CONST  shift 40
-	'('  shift 41
-	'{'  shift 153
-	'}'  shift 154
-	'-'  shift 42
-	ID  shift 43
-	INC  shift 44
-	DEC  shift 45
-	.  error
-
-	stmt  goto 155
-	block  goto 156
-	singlestmt  goto 157
-	expr  goto 158
-	logAnd_expr  goto 47
-	not_expr  goto 48
-	comp_expr  goto 49
-	addassign  goto 159
-	subassign  goto 160
-	assign  goto 161
-	location  goto 162
-	method  goto 51
-	listedassign  goto 163
-	add_expr  goto 52
-	term  goto 53
-	factor  goto 54
-	incdec  goto 55
-
-
-state 140
-	decls : decl_list decl .  (37)
-	decl_list : decl_list decl .  (39)
-
-	FALSE  reduce 37
-	TRUE  reduce 37
-	RETURN  reduce 37
-	IF  reduce 37
-	WHILE  reduce 37
-	BREAK  reduce 37
-	PRINT  reduce 37
-	READ  reduce 37
-	PRINTLN  reduce 37
-	NOT  reduce 37
-	PUTS  reduce 37
-	VAR  reduce 39
-	DEC_CONST  reduce 37
-	REAL_DEC_CONST  reduce 37
-	'('  reduce 37
-	'{'  reduce 37
-	'}'  reduce 37
-	'-'  reduce 37
-	ID  reduce 37
-	INC  reduce 37
-	DEC  reduce 37
-
-
-state 141
+state 149
 	field : '@' ID ':' type '=' expr attrs .  (17)
 
 	.  reduce 17
 
 
-state 142
+state 150
 	attrs : ',' ID '=' . expr attrs  (19)
 
-	FALSE  shift 36
-	TRUE  shift 37
-	NOT  shift 38
-	DEC_CONST  shift 39
-	REAL_DEC_CONST  shift 40
-	'('  shift 41
-	'-'  shift 42
-	ID  shift 43
-	INC  shift 44
-	DEC  shift 45
+	FALSE  shift 37
+	TRUE  shift 38
+	NOT  shift 39
+	DEC_CONST  shift 40
+	LITERAL  shift 41
+	REAL_DEC_CONST  shift 42
+	'('  shift 43
+	'-'  shift 44
+	ID  shift 45
+	INC  shift 46
+	DEC  shift 47
 	.  error
 
-	expr  goto 164
-	logAnd_expr  goto 47
-	not_expr  goto 48
-	comp_expr  goto 49
-	location  goto 50
-	method  goto 51
-	add_expr  goto 52
-	term  goto 53
-	factor  goto 54
-	incdec  goto 55
+	expr  goto 171
+	logAnd_expr  goto 49
+	not_expr  goto 50
+	comp_expr  goto 51
+	location  goto 52
+	method  goto 53
+	add_expr  goto 54
+	term  goto 55
+	factor  goto 56
+	incdec  goto 57
 
 
-state 143
+state 151
 	attrs : ',' ID attrs .  (18)
 
 	.  reduce 18
 
 
-state 144
+state 152
 	meth : modifier ID $$2 '(' params ')' . RIGHTARROW type $$3 body  (24)
 
-	RIGHTARROW  shift 165
+	RIGHTARROW  shift 172
 	.  error
-
-
-state 145
-	stmt : RETURN . expr  (70)
-
-	FALSE  shift 36
-	TRUE  shift 37
-	NOT  shift 38
-	DEC_CONST  shift 39
-	REAL_DEC_CONST  shift 40
-	'('  shift 41
-	'-'  shift 42
-	ID  shift 43
-	INC  shift 44
-	DEC  shift 45
-	.  error
-
-	expr  goto 166
-	logAnd_expr  goto 47
-	not_expr  goto 48
-	comp_expr  goto 49
-	location  goto 50
-	method  goto 51
-	add_expr  goto 52
-	term  goto 53
-	factor  goto 54
-	incdec  goto 55
-
-
-state 146
-	stmt : IF . code '(' expr ')' stmt  (71)
-	stmt : IF . code '(' expr ')' stmt ELSE $$11 stmt  (73)
-	code : .  (65)
-
-	.  reduce 65
-
-	code  goto 167
-
-
-state 147
-	stmt : WHILE . $$12 '(' expr ')' stmt  (77)
-	$$12 : .  (76)
-
-	.  reduce 76
-
-	$$12  goto 168
-
-
-state 148
-	stmt : BREAK .  (80)
-
-	.  reduce 80
-
-
-state 149
-	singlestmt : PRINT . expr  (58)
-	singlestmt : PRINT . LITERAL  (60)
-	stmt : PRINT . expr  (82)
-	stmt : PRINT . LITERAL  (84)
-
-	FALSE  shift 36
-	TRUE  shift 37
-	NOT  shift 38
-	DEC_CONST  shift 39
-	LITERAL  shift 169
-	REAL_DEC_CONST  shift 40
-	'('  shift 41
-	'-'  shift 42
-	ID  shift 43
-	INC  shift 44
-	DEC  shift 45
-	.  error
-
-	expr  goto 170
-	logAnd_expr  goto 47
-	not_expr  goto 48
-	comp_expr  goto 49
-	location  goto 50
-	method  goto 51
-	add_expr  goto 52
-	term  goto 53
-	factor  goto 54
-	incdec  goto 55
-
-
-state 150
-	singlestmt : READ . LITERAL ',' location  (62)
-	stmt : READ . LITERAL ',' location  (87)
-
-	LITERAL  shift 171
-	.  error
-
-
-state 151
-	singlestmt : PRINTLN . expr  (59)
-	singlestmt : PRINTLN . LITERAL  (61)
-	stmt : PRINTLN . expr  (83)
-	stmt : PRINTLN . LITERAL  (85)
-
-	FALSE  shift 36
-	TRUE  shift 37
-	NOT  shift 38
-	DEC_CONST  shift 39
-	LITERAL  shift 172
-	REAL_DEC_CONST  shift 40
-	'('  shift 41
-	'-'  shift 42
-	ID  shift 43
-	INC  shift 44
-	DEC  shift 45
-	.  error
-
-	expr  goto 173
-	logAnd_expr  goto 47
-	not_expr  goto 48
-	comp_expr  goto 49
-	location  goto 50
-	method  goto 51
-	add_expr  goto 52
-	term  goto 53
-	factor  goto 54
-	incdec  goto 55
-
-
-state 152
-	singlestmt : PUTS . inline  (64)
-	stmt : PUTS . inline  (86)
-
-	FALSE  shift 36
-	TRUE  shift 37
-	NOT  shift 38
-	DEC_CONST  shift 39
-	LITERAL  shift 174
-	REAL_DEC_CONST  shift 40
-	'('  shift 41
-	'-'  shift 42
-	ID  shift 43
-	INC  shift 44
-	DEC  shift 45
-	.  error
-
-	inline  goto 175
-	expr  goto 176
-	logAnd_expr  goto 47
-	not_expr  goto 48
-	comp_expr  goto 49
-	location  goto 50
-	method  goto 51
-	add_expr  goto 52
-	term  goto 53
-	factor  goto 54
-	incdec  goto 55
 
 
 state 153
-	block : '{' . stmts '}'  (93)
-	stmts : .  (53)
+	stmt : RETURN . expr separator  (67)
 
-	.  reduce 53
+	FALSE  shift 37
+	TRUE  shift 38
+	NOT  shift 39
+	DEC_CONST  shift 40
+	LITERAL  shift 41
+	REAL_DEC_CONST  shift 42
+	'('  shift 43
+	'-'  shift 44
+	ID  shift 45
+	INC  shift 46
+	DEC  shift 47
+	.  error
 
-	stmts  goto 177
+	expr  goto 173
+	logAnd_expr  goto 49
+	not_expr  goto 50
+	comp_expr  goto 51
+	location  goto 52
+	method  goto 53
+	add_expr  goto 54
+	term  goto 55
+	factor  goto 56
+	incdec  goto 57
 
 
 state 154
-	body : '{' decls stmts '}' .  (36)
+	stmt : IF . code '(' expr ')' stmt  (68)
+	stmt : IF . code '(' expr ')' stmt ELSE $$11 stmt  (70)
+	code : .  (62)
 
-	.  reduce 36
+	.  reduce 62
+
+	code  goto 174
 
 
 state 155
-	stmts : stmts stmt .  (52)
+	stmt : WHILE . $$12 '(' expr ')' stmt  (74)
+	$$12 : .  (73)
 
-	.  reduce 52
+	.  reduce 73
+
+	$$12  goto 175
 
 
 state 156
-	stmt : block .  (81)
+	stmt : BREAK . separator  (77)
 
-	.  reduce 81
+	';'  shift 96
+	.  error
+
+	separator  goto 176
 
 
 state 157
-	stmt : singlestmt . IF expr  (74)
-	stmt : singlestmt . UNLESS expr  (75)
+	singlestmt : READ . expr ',' location  (60)
+	stmt : READ . expr ',' location separator  (80)
 
-	IF  shift 178
-	UNLESS  shift 179
+	FALSE  shift 37
+	TRUE  shift 38
+	NOT  shift 39
+	DEC_CONST  shift 40
+	LITERAL  shift 41
+	REAL_DEC_CONST  shift 42
+	'('  shift 43
+	'-'  shift 44
+	ID  shift 45
+	INC  shift 46
+	DEC  shift 47
+	.  error
+
+	expr  goto 177
+	logAnd_expr  goto 49
+	not_expr  goto 50
+	comp_expr  goto 51
+	location  goto 52
+	method  goto 53
+	add_expr  goto 54
+	term  goto 55
+	factor  goto 56
+	incdec  goto 57
+
+
+state 158
+	singlestmt : PRINTLN . inline  (59)
+	stmt : PRINTLN . inline separator  (79)
+
+	FALSE  shift 37
+	TRUE  shift 38
+	NOT  shift 39
+	DEC_CONST  shift 40
+	LITERAL  shift 41
+	REAL_DEC_CONST  shift 42
+	'('  shift 43
+	'-'  shift 44
+	ID  shift 45
+	INC  shift 46
+	DEC  shift 47
+	.  error
+
+	inline  goto 178
+	expr  goto 179
+	logAnd_expr  goto 49
+	not_expr  goto 50
+	comp_expr  goto 51
+	location  goto 52
+	method  goto 53
+	add_expr  goto 54
+	term  goto 55
+	factor  goto 56
+	incdec  goto 57
+
+
+state 159
+	block : '{' . stmts '}'  (86)
+	stmts : .  (54)
+
+	.  reduce 54
+
+	stmts  goto 180
+
+
+state 160
+	body : '{' decls stmts '}' .  (37)
+
+	.  reduce 37
+
+
+state 161
+	stmts : stmts stmt .  (53)
+
+	.  reduce 53
+
+
+state 162
+	stmt : block .  (78)
+
+	.  reduce 78
+
+
+state 163
+	stmt : singlestmt . IF expr separator  (71)
+	stmt : singlestmt . UNLESS expr separator  (72)
+
+	IF  shift 181
+	UNLESS  shift 182
 	.  error
 
 
-158: reduce/reduce conflict (reduce 63, reduce 88) on IF
-state 158
-	singlestmt : expr .  (63)
-	stmt : expr . TIMES $$13 stmt  (79)
-	stmt : expr .  (88)
-	expr : expr . OR logAnd_expr  (103)
-
-	TIMES  shift 180
-	OR  shift 71
-	FALSE  reduce 88
-	TRUE  reduce 88
-	RETURN  reduce 88
-	IF  reduce 63
-	ELSE  reduce 88
-	WHILE  reduce 88
-	BREAK  reduce 88
-	PRINT  reduce 88
-	READ  reduce 88
-	PRINTLN  reduce 88
-	UNLESS  reduce 63
-	NOT  reduce 88
-	PUTS  reduce 88
-	DEC_CONST  reduce 88
-	REAL_DEC_CONST  reduce 88
-	'('  reduce 88
-	'{'  reduce 88
-	'}'  reduce 88
-	'-'  reduce 88
-	ID  reduce 88
-	INC  reduce 88
-	DEC  reduce 88
-
-
-159: reduce/reduce conflict (reduce 55, reduce 67) on IF
-state 159
-	singlestmt : addassign .  (55)
-	stmt : addassign .  (67)
-
-	FALSE  reduce 67
-	TRUE  reduce 67
-	RETURN  reduce 67
-	IF  reduce 55
-	ELSE  reduce 67
-	WHILE  reduce 67
-	BREAK  reduce 67
-	PRINT  reduce 67
-	READ  reduce 67
-	PRINTLN  reduce 67
-	UNLESS  reduce 55
-	NOT  reduce 67
-	PUTS  reduce 67
-	DEC_CONST  reduce 67
-	REAL_DEC_CONST  reduce 67
-	'('  reduce 67
-	'{'  reduce 67
-	'}'  reduce 67
-	'-'  reduce 67
-	ID  reduce 67
-	INC  reduce 67
-	DEC  reduce 67
-
-
-160: reduce/reduce conflict (reduce 56, reduce 68) on IF
-state 160
-	singlestmt : subassign .  (56)
-	stmt : subassign .  (68)
-
-	FALSE  reduce 68
-	TRUE  reduce 68
-	RETURN  reduce 68
-	IF  reduce 56
-	ELSE  reduce 68
-	WHILE  reduce 68
-	BREAK  reduce 68
-	PRINT  reduce 68
-	READ  reduce 68
-	PRINTLN  reduce 68
-	UNLESS  reduce 56
-	NOT  reduce 68
-	PUTS  reduce 68
-	DEC_CONST  reduce 68
-	REAL_DEC_CONST  reduce 68
-	'('  reduce 68
-	'{'  reduce 68
-	'}'  reduce 68
-	'-'  reduce 68
-	ID  reduce 68
-	INC  reduce 68
-	DEC  reduce 68
-
-
-161: reduce/reduce conflict (reduce 54, reduce 66) on IF
-state 161
-	singlestmt : assign .  (54)
-	stmt : assign .  (66)
-
-	FALSE  reduce 66
-	TRUE  reduce 66
-	RETURN  reduce 66
-	IF  reduce 54
-	ELSE  reduce 66
-	WHILE  reduce 66
-	BREAK  reduce 66
-	PRINT  reduce 66
-	READ  reduce 66
-	PRINTLN  reduce 66
-	UNLESS  reduce 54
-	NOT  reduce 66
-	PUTS  reduce 66
-	DEC_CONST  reduce 66
-	REAL_DEC_CONST  reduce 66
-	'('  reduce 66
-	'{'  reduce 66
-	'}'  reduce 66
-	'-'  reduce 66
-	ID  reduce 66
-	INC  reduce 66
-	DEC  reduce 66
-
-
-162: shift/reduce conflict (shift 74, reduce 128) on INC
-162: shift/reduce conflict (shift 75, reduce 128) on DEC
-state 162
-	addassign : location . ADDASSIGN expr  (94)
-	subassign : location . SUBASSIGN expr  (95)
-	assign : location . '=' expr  (96)
-	assign : location . '=' assign  (97)
-	listedassign : location . ',' nestedassign ',' expr  (98)
-	factor : location .  (128)
-	incdec : location . INC  (136)
-	incdec : location . DEC  (138)
-
-	'='  shift 181
-	','  shift 182
-	INC  shift 74
-	DEC  shift 75
-	ADDASSIGN  shift 183
-	SUBASSIGN  shift 184
-	FALSE  reduce 128
-	TRUE  reduce 128
-	RETURN  reduce 128
-	IF  reduce 128
-	ELSE  reduce 128
-	WHILE  reduce 128
-	BREAK  reduce 128
-	PRINT  reduce 128
-	READ  reduce 128
-	PRINTLN  reduce 128
-	TIMES  reduce 128
-	UNLESS  reduce 128
-	NOT  reduce 128
-	AND  reduce 128
-	OR  reduce 128
-	PUTS  reduce 128
-	DEC_CONST  reduce 128
-	REAL_DEC_CONST  reduce 128
-	'('  reduce 128
-	'{'  reduce 128
-	'}'  reduce 128
-	'*'  reduce 128
-	'/'  reduce 128
-	'+'  reduce 128
-	'-'  reduce 128
-	GE  reduce 128
-	'>'  reduce 128
-	LE  reduce 128
-	'<'  reduce 128
-	NE  reduce 128
-	EQ  reduce 128
-	ID  reduce 128
-	'%'  reduce 128
-
-
-163: reduce/reduce conflict (reduce 57, reduce 69) on IF
-state 163
-	singlestmt : listedassign .  (57)
-	stmt : listedassign .  (69)
-
-	FALSE  reduce 69
-	TRUE  reduce 69
-	RETURN  reduce 69
-	IF  reduce 57
-	ELSE  reduce 69
-	WHILE  reduce 69
-	BREAK  reduce 69
-	PRINT  reduce 69
-	READ  reduce 69
-	PRINTLN  reduce 69
-	UNLESS  reduce 57
-	NOT  reduce 69
-	PUTS  reduce 69
-	DEC_CONST  reduce 69
-	REAL_DEC_CONST  reduce 69
-	'('  reduce 69
-	'{'  reduce 69
-	'}'  reduce 69
-	'-'  reduce 69
-	ID  reduce 69
-	INC  reduce 69
-	DEC  reduce 69
-
-
 state 164
+	stmt : separator .  (82)
+
+	.  reduce 82
+
+
+state 165
+	singlestmt : expr .  (61)
+	stmt : expr . TIMES $$13 stmt  (76)
+	stmt : expr . separator  (81)
+	expr : expr . OR logAnd_expr  (96)
+
+	TIMES  shift 183
+	OR  shift 73
+	';'  shift 96
+	IF  reduce 61
+	UNLESS  reduce 61
+
+	separator  goto 184
+
+
+state 166
+	singlestmt : addassign .  (56)
+	stmt : addassign . separator  (64)
+
+	';'  shift 96
+	IF  reduce 56
+	UNLESS  reduce 56
+
+	separator  goto 185
+
+
+state 167
+	singlestmt : subassign .  (57)
+	stmt : subassign . separator  (65)
+
+	';'  shift 96
+	IF  reduce 57
+	UNLESS  reduce 57
+
+	separator  goto 186
+
+
+state 168
+	singlestmt : assign .  (55)
+	stmt : assign . separator  (63)
+
+	';'  shift 96
+	IF  reduce 55
+	UNLESS  reduce 55
+
+	separator  goto 187
+
+
+state 169
+	addassign : location . ADDASSIGN expr  (87)
+	subassign : location . SUBASSIGN expr  (88)
+	assign : location . '=' expr  (89)
+	assign : location . '=' assign  (90)
+	listedassign : location . ',' nestedassign ',' expr  (91)
+	factor : location .  (122)
+	incdec : location . INC  (131)
+	incdec : location . DEC  (133)
+
+	'='  shift 188
+	','  shift 189
+	INC  shift 76
+	DEC  shift 77
+	ADDASSIGN  shift 190
+	SUBASSIGN  shift 191
+	IF  reduce 122
+	TIMES  reduce 122
+	UNLESS  reduce 122
+	AND  reduce 122
+	OR  reduce 122
+	'*'  reduce 122
+	'/'  reduce 122
+	'+'  reduce 122
+	'-'  reduce 122
+	';'  reduce 122
+	IDIV  reduce 122
+	GE  reduce 122
+	'>'  reduce 122
+	LE  reduce 122
+	'<'  reduce 122
+	NE  reduce 122
+	EQ  reduce 122
+	'%'  reduce 122
+
+
+state 170
+	singlestmt : listedassign .  (58)
+	stmt : listedassign . separator  (66)
+
+	';'  shift 96
+	IF  reduce 58
+	UNLESS  reduce 58
+
+	separator  goto 192
+
+
+state 171
 	attrs : ',' ID '=' expr . attrs  (19)
-	expr : expr . OR logAnd_expr  (103)
+	expr : expr . OR logAnd_expr  (96)
 	attrs : .  (20)
 
-	OR  shift 71
-	','  shift 130
+	OR  shift 73
+	','  shift 138
 	PUBLIC  reduce 20
 	ABSTRACT  reduce 20
 	'}'  reduce 20
 	ID  reduce 20
 	'@'  reduce 20
 
-	attrs  goto 185
+	attrs  goto 193
 
 
-state 165
+state 172
 	meth : modifier ID $$2 '(' params ')' RIGHTARROW . type $$3 body  (24)
 
 	INT  shift 21
 	REAL  shift 22
 	BOOL  shift 23
-	ID  shift 24
+	STR  shift 24
+	ID  shift 25
 	.  error
 
-	type  goto 186
+	type  goto 194
 
 
-state 166
-	stmt : RETURN expr .  (70)
-	expr : expr . OR logAnd_expr  (103)
-
-	OR  shift 71
-	FALSE  reduce 70
-	TRUE  reduce 70
-	RETURN  reduce 70
-	IF  reduce 70
-	ELSE  reduce 70
-	WHILE  reduce 70
-	BREAK  reduce 70
-	PRINT  reduce 70
-	READ  reduce 70
-	PRINTLN  reduce 70
-	NOT  reduce 70
-	PUTS  reduce 70
-	DEC_CONST  reduce 70
-	REAL_DEC_CONST  reduce 70
-	'('  reduce 70
-	'{'  reduce 70
-	'}'  reduce 70
-	'-'  reduce 70
-	ID  reduce 70
-	INC  reduce 70
-	DEC  reduce 70
-
-
-state 167
-	stmt : IF code . '(' expr ')' stmt  (71)
-	stmt : IF code . '(' expr ')' stmt ELSE $$11 stmt  (73)
-
-	'('  shift 187
-	.  error
-
-
-state 168
-	stmt : WHILE $$12 . '(' expr ')' stmt  (77)
-
-	'('  shift 188
-	.  error
-
-
-169: reduce/reduce conflict (reduce 60, reduce 84) on IF
-state 169
-	singlestmt : PRINT LITERAL .  (60)
-	stmt : PRINT LITERAL .  (84)
-
-	FALSE  reduce 84
-	TRUE  reduce 84
-	RETURN  reduce 84
-	IF  reduce 60
-	ELSE  reduce 84
-	WHILE  reduce 84
-	BREAK  reduce 84
-	PRINT  reduce 84
-	READ  reduce 84
-	PRINTLN  reduce 84
-	UNLESS  reduce 60
-	NOT  reduce 84
-	PUTS  reduce 84
-	DEC_CONST  reduce 84
-	REAL_DEC_CONST  reduce 84
-	'('  reduce 84
-	'{'  reduce 84
-	'}'  reduce 84
-	'-'  reduce 84
-	ID  reduce 84
-	INC  reduce 84
-	DEC  reduce 84
-
-
-170: reduce/reduce conflict (reduce 58, reduce 82) on IF
-state 170
-	singlestmt : PRINT expr .  (58)
-	stmt : PRINT expr .  (82)
-	expr : expr . OR logAnd_expr  (103)
-
-	OR  shift 71
-	FALSE  reduce 82
-	TRUE  reduce 82
-	RETURN  reduce 82
-	IF  reduce 58
-	ELSE  reduce 82
-	WHILE  reduce 82
-	BREAK  reduce 82
-	PRINT  reduce 82
-	READ  reduce 82
-	PRINTLN  reduce 82
-	UNLESS  reduce 58
-	NOT  reduce 82
-	PUTS  reduce 82
-	DEC_CONST  reduce 82
-	REAL_DEC_CONST  reduce 82
-	'('  reduce 82
-	'{'  reduce 82
-	'}'  reduce 82
-	'-'  reduce 82
-	ID  reduce 82
-	INC  reduce 82
-	DEC  reduce 82
-
-
-state 171
-	singlestmt : READ LITERAL . ',' location  (62)
-	stmt : READ LITERAL . ',' location  (87)
-
-	','  shift 189
-	.  error
-
-
-172: reduce/reduce conflict (reduce 61, reduce 85) on IF
-state 172
-	singlestmt : PRINTLN LITERAL .  (61)
-	stmt : PRINTLN LITERAL .  (85)
-
-	FALSE  reduce 85
-	TRUE  reduce 85
-	RETURN  reduce 85
-	IF  reduce 61
-	ELSE  reduce 85
-	WHILE  reduce 85
-	BREAK  reduce 85
-	PRINT  reduce 85
-	READ  reduce 85
-	PRINTLN  reduce 85
-	UNLESS  reduce 61
-	NOT  reduce 85
-	PUTS  reduce 85
-	DEC_CONST  reduce 85
-	REAL_DEC_CONST  reduce 85
-	'('  reduce 85
-	'{'  reduce 85
-	'}'  reduce 85
-	'-'  reduce 85
-	ID  reduce 85
-	INC  reduce 85
-	DEC  reduce 85
-
-
-173: reduce/reduce conflict (reduce 59, reduce 83) on IF
 state 173
-	singlestmt : PRINTLN expr .  (59)
-	stmt : PRINTLN expr .  (83)
-	expr : expr . OR logAnd_expr  (103)
+	stmt : RETURN expr . separator  (67)
+	expr : expr . OR logAnd_expr  (96)
 
-	OR  shift 71
-	FALSE  reduce 83
-	TRUE  reduce 83
-	RETURN  reduce 83
-	IF  reduce 59
-	ELSE  reduce 83
-	WHILE  reduce 83
-	BREAK  reduce 83
-	PRINT  reduce 83
-	READ  reduce 83
-	PRINTLN  reduce 83
-	UNLESS  reduce 59
-	NOT  reduce 83
-	PUTS  reduce 83
-	DEC_CONST  reduce 83
-	REAL_DEC_CONST  reduce 83
-	'('  reduce 83
-	'{'  reduce 83
-	'}'  reduce 83
-	'-'  reduce 83
-	ID  reduce 83
-	INC  reduce 83
-	DEC  reduce 83
+	OR  shift 73
+	';'  shift 96
+	.  error
+
+	separator  goto 195
 
 
 state 174
-	inline : LITERAL . ',' inline  (90)
-	inline : LITERAL .  (92)
+	stmt : IF code . '(' expr ')' stmt  (68)
+	stmt : IF code . '(' expr ')' stmt ELSE $$11 stmt  (70)
 
-	','  shift 190
-	FALSE  reduce 92
-	TRUE  reduce 92
-	RETURN  reduce 92
-	IF  reduce 92
-	ELSE  reduce 92
-	WHILE  reduce 92
-	BREAK  reduce 92
-	PRINT  reduce 92
-	READ  reduce 92
-	PRINTLN  reduce 92
-	UNLESS  reduce 92
-	NOT  reduce 92
-	PUTS  reduce 92
-	DEC_CONST  reduce 92
-	REAL_DEC_CONST  reduce 92
-	'('  reduce 92
-	'{'  reduce 92
-	'}'  reduce 92
-	'-'  reduce 92
-	ID  reduce 92
-	INC  reduce 92
-	DEC  reduce 92
+	'('  shift 196
+	.  error
 
 
-175: reduce/reduce conflict (reduce 64, reduce 86) on IF
 state 175
-	singlestmt : PUTS inline .  (64)
-	stmt : PUTS inline .  (86)
+	stmt : WHILE $$12 . '(' expr ')' stmt  (74)
 
-	FALSE  reduce 86
-	TRUE  reduce 86
-	RETURN  reduce 86
-	IF  reduce 64
-	ELSE  reduce 86
-	WHILE  reduce 86
-	BREAK  reduce 86
-	PRINT  reduce 86
-	READ  reduce 86
-	PRINTLN  reduce 86
-	UNLESS  reduce 64
-	NOT  reduce 86
-	PUTS  reduce 86
-	DEC_CONST  reduce 86
-	REAL_DEC_CONST  reduce 86
-	'('  reduce 86
-	'{'  reduce 86
-	'}'  reduce 86
-	'-'  reduce 86
-	ID  reduce 86
-	INC  reduce 86
-	DEC  reduce 86
+	'('  shift 197
+	.  error
 
 
 state 176
-	inline : expr . ',' inline  (89)
-	inline : expr .  (91)
-	expr : expr . OR logAnd_expr  (103)
+	stmt : BREAK separator .  (77)
 
-	OR  shift 71
-	','  shift 191
-	FALSE  reduce 91
-	TRUE  reduce 91
-	RETURN  reduce 91
-	IF  reduce 91
-	ELSE  reduce 91
-	WHILE  reduce 91
-	BREAK  reduce 91
-	PRINT  reduce 91
-	READ  reduce 91
-	PRINTLN  reduce 91
-	UNLESS  reduce 91
-	NOT  reduce 91
-	PUTS  reduce 91
-	DEC_CONST  reduce 91
-	REAL_DEC_CONST  reduce 91
-	'('  reduce 91
-	'{'  reduce 91
-	'}'  reduce 91
-	'-'  reduce 91
-	ID  reduce 91
-	INC  reduce 91
-	DEC  reduce 91
+	.  reduce 77
 
 
 state 177
-	stmts : stmts . stmt  (52)
-	block : '{' stmts . '}'  (93)
+	singlestmt : READ expr . ',' location  (60)
+	stmt : READ expr . ',' location separator  (80)
+	expr : expr . OR logAnd_expr  (96)
 
-	FALSE  shift 36
-	TRUE  shift 37
-	RETURN  shift 145
-	IF  shift 146
-	WHILE  shift 147
-	BREAK  shift 148
-	PRINT  shift 149
-	READ  shift 150
-	PRINTLN  shift 151
-	NOT  shift 38
-	PUTS  shift 152
-	DEC_CONST  shift 39
-	REAL_DEC_CONST  shift 40
-	'('  shift 41
-	'{'  shift 153
-	'}'  shift 192
-	'-'  shift 42
-	ID  shift 43
-	INC  shift 44
-	DEC  shift 45
+	OR  shift 73
+	','  shift 198
 	.  error
-
-	stmt  goto 155
-	block  goto 156
-	singlestmt  goto 157
-	expr  goto 158
-	logAnd_expr  goto 47
-	not_expr  goto 48
-	comp_expr  goto 49
-	addassign  goto 159
-	subassign  goto 160
-	assign  goto 161
-	location  goto 162
-	method  goto 51
-	listedassign  goto 163
-	add_expr  goto 52
-	term  goto 53
-	factor  goto 54
-	incdec  goto 55
 
 
 state 178
-	stmt : singlestmt IF . expr  (74)
+	singlestmt : PRINTLN inline .  (59)
+	stmt : PRINTLN inline . separator  (79)
 
-	FALSE  shift 36
-	TRUE  shift 37
-	NOT  shift 38
-	DEC_CONST  shift 39
-	REAL_DEC_CONST  shift 40
-	'('  shift 41
-	'-'  shift 42
-	ID  shift 43
-	INC  shift 44
-	DEC  shift 45
-	.  error
+	';'  shift 96
+	IF  reduce 59
+	UNLESS  reduce 59
 
-	expr  goto 193
-	logAnd_expr  goto 47
-	not_expr  goto 48
-	comp_expr  goto 49
-	location  goto 50
-	method  goto 51
-	add_expr  goto 52
-	term  goto 53
-	factor  goto 54
-	incdec  goto 55
+	separator  goto 199
 
 
 state 179
-	stmt : singlestmt UNLESS . expr  (75)
+	inline : expr . ',' inline  (84)
+	inline : expr .  (85)
+	expr : expr . OR logAnd_expr  (96)
 
-	FALSE  shift 36
-	TRUE  shift 37
-	NOT  shift 38
-	DEC_CONST  shift 39
-	REAL_DEC_CONST  shift 40
-	'('  shift 41
-	'-'  shift 42
-	ID  shift 43
-	INC  shift 44
-	DEC  shift 45
-	.  error
-
-	expr  goto 194
-	logAnd_expr  goto 47
-	not_expr  goto 48
-	comp_expr  goto 49
-	location  goto 50
-	method  goto 51
-	add_expr  goto 52
-	term  goto 53
-	factor  goto 54
-	incdec  goto 55
+	OR  shift 73
+	','  shift 200
+	IF  reduce 85
+	UNLESS  reduce 85
+	';'  reduce 85
 
 
 state 180
-	stmt : expr TIMES . $$13 stmt  (79)
-	$$13 : .  (78)
+	stmts : stmts . stmt  (53)
+	block : '{' stmts . '}'  (86)
 
-	.  reduce 78
+	FALSE  shift 37
+	TRUE  shift 38
+	RETURN  shift 153
+	IF  shift 154
+	WHILE  shift 155
+	BREAK  shift 156
+	READ  shift 157
+	PRINTLN  shift 158
+	NOT  shift 39
+	DEC_CONST  shift 40
+	LITERAL  shift 41
+	REAL_DEC_CONST  shift 42
+	'('  shift 43
+	'{'  shift 159
+	'}'  shift 201
+	'-'  shift 44
+	';'  shift 96
+	ID  shift 45
+	INC  shift 46
+	DEC  shift 47
+	.  error
 
-	$$13  goto 195
+	stmt  goto 161
+	block  goto 162
+	singlestmt  goto 163
+	separator  goto 164
+	expr  goto 165
+	logAnd_expr  goto 49
+	not_expr  goto 50
+	comp_expr  goto 51
+	addassign  goto 166
+	subassign  goto 167
+	assign  goto 168
+	location  goto 169
+	method  goto 53
+	listedassign  goto 170
+	add_expr  goto 54
+	term  goto 55
+	factor  goto 56
+	incdec  goto 57
 
 
 state 181
-	assign : location '=' . expr  (96)
-	assign : location '=' . assign  (97)
+	stmt : singlestmt IF . expr separator  (71)
 
-	FALSE  shift 36
-	TRUE  shift 37
-	NOT  shift 38
-	DEC_CONST  shift 39
-	REAL_DEC_CONST  shift 40
-	'('  shift 41
-	'-'  shift 42
-	ID  shift 43
-	INC  shift 44
-	DEC  shift 45
-	.  error
-
-	expr  goto 196
-	logAnd_expr  goto 47
-	not_expr  goto 48
-	comp_expr  goto 49
-	assign  goto 197
-	location  goto 198
-	method  goto 51
-	add_expr  goto 52
-	term  goto 53
-	factor  goto 54
-	incdec  goto 55
-
-
-state 182
-	listedassign : location ',' . nestedassign ',' expr  (98)
-
-	ID  shift 68
-	.  error
-
-	location  goto 199
-	nestedassign  goto 200
-
-
-state 183
-	addassign : location ADDASSIGN . expr  (94)
-
-	FALSE  shift 36
-	TRUE  shift 37
-	NOT  shift 38
-	DEC_CONST  shift 39
-	REAL_DEC_CONST  shift 40
-	'('  shift 41
-	'-'  shift 42
-	ID  shift 43
-	INC  shift 44
-	DEC  shift 45
-	.  error
-
-	expr  goto 201
-	logAnd_expr  goto 47
-	not_expr  goto 48
-	comp_expr  goto 49
-	location  goto 50
-	method  goto 51
-	add_expr  goto 52
-	term  goto 53
-	factor  goto 54
-	incdec  goto 55
-
-
-state 184
-	subassign : location SUBASSIGN . expr  (95)
-
-	FALSE  shift 36
-	TRUE  shift 37
-	NOT  shift 38
-	DEC_CONST  shift 39
-	REAL_DEC_CONST  shift 40
-	'('  shift 41
-	'-'  shift 42
-	ID  shift 43
-	INC  shift 44
-	DEC  shift 45
+	FALSE  shift 37
+	TRUE  shift 38
+	NOT  shift 39
+	DEC_CONST  shift 40
+	LITERAL  shift 41
+	REAL_DEC_CONST  shift 42
+	'('  shift 43
+	'-'  shift 44
+	ID  shift 45
+	INC  shift 46
+	DEC  shift 47
 	.  error
 
 	expr  goto 202
-	logAnd_expr  goto 47
-	not_expr  goto 48
-	comp_expr  goto 49
-	location  goto 50
-	method  goto 51
-	add_expr  goto 52
-	term  goto 53
-	factor  goto 54
-	incdec  goto 55
+	logAnd_expr  goto 49
+	not_expr  goto 50
+	comp_expr  goto 51
+	location  goto 52
+	method  goto 53
+	add_expr  goto 54
+	term  goto 55
+	factor  goto 56
+	incdec  goto 57
+
+
+state 182
+	stmt : singlestmt UNLESS . expr separator  (72)
+
+	FALSE  shift 37
+	TRUE  shift 38
+	NOT  shift 39
+	DEC_CONST  shift 40
+	LITERAL  shift 41
+	REAL_DEC_CONST  shift 42
+	'('  shift 43
+	'-'  shift 44
+	ID  shift 45
+	INC  shift 46
+	DEC  shift 47
+	.  error
+
+	expr  goto 203
+	logAnd_expr  goto 49
+	not_expr  goto 50
+	comp_expr  goto 51
+	location  goto 52
+	method  goto 53
+	add_expr  goto 54
+	term  goto 55
+	factor  goto 56
+	incdec  goto 57
+
+
+state 183
+	stmt : expr TIMES . $$13 stmt  (76)
+	$$13 : .  (75)
+
+	.  reduce 75
+
+	$$13  goto 204
+
+
+state 184
+	stmt : expr separator .  (81)
+
+	.  reduce 81
 
 
 state 185
+	stmt : addassign separator .  (64)
+
+	.  reduce 64
+
+
+state 186
+	stmt : subassign separator .  (65)
+
+	.  reduce 65
+
+
+state 187
+	stmt : assign separator .  (63)
+
+	.  reduce 63
+
+
+state 188
+	assign : location '=' . expr  (89)
+	assign : location '=' . assign  (90)
+
+	FALSE  shift 37
+	TRUE  shift 38
+	NOT  shift 39
+	DEC_CONST  shift 40
+	LITERAL  shift 41
+	REAL_DEC_CONST  shift 42
+	'('  shift 43
+	'-'  shift 44
+	ID  shift 45
+	INC  shift 46
+	DEC  shift 47
+	.  error
+
+	expr  goto 205
+	logAnd_expr  goto 49
+	not_expr  goto 50
+	comp_expr  goto 51
+	assign  goto 206
+	location  goto 207
+	method  goto 53
+	add_expr  goto 54
+	term  goto 55
+	factor  goto 56
+	incdec  goto 57
+
+
+state 189
+	listedassign : location ',' . nestedassign ',' expr  (91)
+
+	ID  shift 70
+	.  error
+
+	location  goto 208
+	nestedassign  goto 209
+
+
+state 190
+	addassign : location ADDASSIGN . expr  (87)
+
+	FALSE  shift 37
+	TRUE  shift 38
+	NOT  shift 39
+	DEC_CONST  shift 40
+	LITERAL  shift 41
+	REAL_DEC_CONST  shift 42
+	'('  shift 43
+	'-'  shift 44
+	ID  shift 45
+	INC  shift 46
+	DEC  shift 47
+	.  error
+
+	expr  goto 210
+	logAnd_expr  goto 49
+	not_expr  goto 50
+	comp_expr  goto 51
+	location  goto 52
+	method  goto 53
+	add_expr  goto 54
+	term  goto 55
+	factor  goto 56
+	incdec  goto 57
+
+
+state 191
+	subassign : location SUBASSIGN . expr  (88)
+
+	FALSE  shift 37
+	TRUE  shift 38
+	NOT  shift 39
+	DEC_CONST  shift 40
+	LITERAL  shift 41
+	REAL_DEC_CONST  shift 42
+	'('  shift 43
+	'-'  shift 44
+	ID  shift 45
+	INC  shift 46
+	DEC  shift 47
+	.  error
+
+	expr  goto 211
+	logAnd_expr  goto 49
+	not_expr  goto 50
+	comp_expr  goto 51
+	location  goto 52
+	method  goto 53
+	add_expr  goto 54
+	term  goto 55
+	factor  goto 56
+	incdec  goto 57
+
+
+state 192
+	stmt : listedassign separator .  (66)
+
+	.  reduce 66
+
+
+state 193
 	attrs : ',' ID '=' expr attrs .  (19)
 
 	.  reduce 19
 
 
-state 186
+state 194
 	meth : modifier ID $$2 '(' params ')' RIGHTARROW type . $$3 body  (24)
 	$$3 : .  (23)
 
 	.  reduce 23
 
-	$$3  goto 203
-
-
-state 187
-	stmt : IF code '(' . expr ')' stmt  (71)
-	stmt : IF code '(' . expr ')' stmt ELSE $$11 stmt  (73)
-
-	FALSE  shift 36
-	TRUE  shift 37
-	NOT  shift 38
-	DEC_CONST  shift 39
-	REAL_DEC_CONST  shift 40
-	'('  shift 41
-	'-'  shift 42
-	ID  shift 43
-	INC  shift 44
-	DEC  shift 45
-	.  error
-
-	expr  goto 204
-	logAnd_expr  goto 47
-	not_expr  goto 48
-	comp_expr  goto 49
-	location  goto 50
-	method  goto 51
-	add_expr  goto 52
-	term  goto 53
-	factor  goto 54
-	incdec  goto 55
-
-
-state 188
-	stmt : WHILE $$12 '(' . expr ')' stmt  (77)
-
-	FALSE  shift 36
-	TRUE  shift 37
-	NOT  shift 38
-	DEC_CONST  shift 39
-	REAL_DEC_CONST  shift 40
-	'('  shift 41
-	'-'  shift 42
-	ID  shift 43
-	INC  shift 44
-	DEC  shift 45
-	.  error
-
-	expr  goto 205
-	logAnd_expr  goto 47
-	not_expr  goto 48
-	comp_expr  goto 49
-	location  goto 50
-	method  goto 51
-	add_expr  goto 52
-	term  goto 53
-	factor  goto 54
-	incdec  goto 55
-
-
-state 189
-	singlestmt : READ LITERAL ',' . location  (62)
-	stmt : READ LITERAL ',' . location  (87)
-
-	ID  shift 68
-	.  error
-
-	location  goto 206
-
-
-state 190
-	inline : LITERAL ',' . inline  (90)
-
-	FALSE  shift 36
-	TRUE  shift 37
-	NOT  shift 38
-	DEC_CONST  shift 39
-	LITERAL  shift 174
-	REAL_DEC_CONST  shift 40
-	'('  shift 41
-	'-'  shift 42
-	ID  shift 43
-	INC  shift 44
-	DEC  shift 45
-	.  error
-
-	inline  goto 207
-	expr  goto 176
-	logAnd_expr  goto 47
-	not_expr  goto 48
-	comp_expr  goto 49
-	location  goto 50
-	method  goto 51
-	add_expr  goto 52
-	term  goto 53
-	factor  goto 54
-	incdec  goto 55
-
-
-state 191
-	inline : expr ',' . inline  (89)
-
-	FALSE  shift 36
-	TRUE  shift 37
-	NOT  shift 38
-	DEC_CONST  shift 39
-	LITERAL  shift 174
-	REAL_DEC_CONST  shift 40
-	'('  shift 41
-	'-'  shift 42
-	ID  shift 43
-	INC  shift 44
-	DEC  shift 45
-	.  error
-
-	inline  goto 208
-	expr  goto 176
-	logAnd_expr  goto 47
-	not_expr  goto 48
-	comp_expr  goto 49
-	location  goto 50
-	method  goto 51
-	add_expr  goto 52
-	term  goto 53
-	factor  goto 54
-	incdec  goto 55
-
-
-state 192
-	block : '{' stmts '}' .  (93)
-
-	.  reduce 93
-
-
-state 193
-	stmt : singlestmt IF expr .  (74)
-	expr : expr . OR logAnd_expr  (103)
-
-	OR  shift 71
-	FALSE  reduce 74
-	TRUE  reduce 74
-	RETURN  reduce 74
-	IF  reduce 74
-	ELSE  reduce 74
-	WHILE  reduce 74
-	BREAK  reduce 74
-	PRINT  reduce 74
-	READ  reduce 74
-	PRINTLN  reduce 74
-	NOT  reduce 74
-	PUTS  reduce 74
-	DEC_CONST  reduce 74
-	REAL_DEC_CONST  reduce 74
-	'('  reduce 74
-	'{'  reduce 74
-	'}'  reduce 74
-	'-'  reduce 74
-	ID  reduce 74
-	INC  reduce 74
-	DEC  reduce 74
-
-
-state 194
-	stmt : singlestmt UNLESS expr .  (75)
-	expr : expr . OR logAnd_expr  (103)
-
-	OR  shift 71
-	FALSE  reduce 75
-	TRUE  reduce 75
-	RETURN  reduce 75
-	IF  reduce 75
-	ELSE  reduce 75
-	WHILE  reduce 75
-	BREAK  reduce 75
-	PRINT  reduce 75
-	READ  reduce 75
-	PRINTLN  reduce 75
-	NOT  reduce 75
-	PUTS  reduce 75
-	DEC_CONST  reduce 75
-	REAL_DEC_CONST  reduce 75
-	'('  reduce 75
-	'{'  reduce 75
-	'}'  reduce 75
-	'-'  reduce 75
-	ID  reduce 75
-	INC  reduce 75
-	DEC  reduce 75
+	$$3  goto 212
 
 
 state 195
-	stmt : expr TIMES $$13 . stmt  (79)
+	stmt : RETURN expr separator .  (67)
 
-	FALSE  shift 36
-	TRUE  shift 37
-	RETURN  shift 145
-	IF  shift 146
-	WHILE  shift 147
-	BREAK  shift 148
-	PRINT  shift 149
-	READ  shift 150
-	PRINTLN  shift 151
-	NOT  shift 38
-	PUTS  shift 152
-	DEC_CONST  shift 39
-	REAL_DEC_CONST  shift 40
-	'('  shift 41
-	'{'  shift 153
-	'-'  shift 42
-	ID  shift 43
-	INC  shift 44
-	DEC  shift 45
-	.  error
-
-	stmt  goto 209
-	block  goto 156
-	singlestmt  goto 157
-	expr  goto 158
-	logAnd_expr  goto 47
-	not_expr  goto 48
-	comp_expr  goto 49
-	addassign  goto 159
-	subassign  goto 160
-	assign  goto 161
-	location  goto 162
-	method  goto 51
-	listedassign  goto 163
-	add_expr  goto 52
-	term  goto 53
-	factor  goto 54
-	incdec  goto 55
+	.  reduce 67
 
 
 state 196
-	assign : location '=' expr .  (96)
-	expr : expr . OR logAnd_expr  (103)
+	stmt : IF code '(' . expr ')' stmt  (68)
+	stmt : IF code '(' . expr ')' stmt ELSE $$11 stmt  (70)
 
-	OR  shift 71
-	FALSE  reduce 96
-	TRUE  reduce 96
-	RETURN  reduce 96
-	IF  reduce 96
-	ELSE  reduce 96
-	WHILE  reduce 96
-	BREAK  reduce 96
-	PRINT  reduce 96
-	READ  reduce 96
-	PRINTLN  reduce 96
-	UNLESS  reduce 96
-	NOT  reduce 96
-	PUTS  reduce 96
-	DEC_CONST  reduce 96
-	REAL_DEC_CONST  reduce 96
-	'('  reduce 96
-	'{'  reduce 96
-	'}'  reduce 96
-	'-'  reduce 96
-	ID  reduce 96
-	INC  reduce 96
-	DEC  reduce 96
+	FALSE  shift 37
+	TRUE  shift 38
+	NOT  shift 39
+	DEC_CONST  shift 40
+	LITERAL  shift 41
+	REAL_DEC_CONST  shift 42
+	'('  shift 43
+	'-'  shift 44
+	ID  shift 45
+	INC  shift 46
+	DEC  shift 47
+	.  error
+
+	expr  goto 213
+	logAnd_expr  goto 49
+	not_expr  goto 50
+	comp_expr  goto 51
+	location  goto 52
+	method  goto 53
+	add_expr  goto 54
+	term  goto 55
+	factor  goto 56
+	incdec  goto 57
 
 
 state 197
-	assign : location '=' assign .  (97)
+	stmt : WHILE $$12 '(' . expr ')' stmt  (74)
 
-	.  reduce 97
+	FALSE  shift 37
+	TRUE  shift 38
+	NOT  shift 39
+	DEC_CONST  shift 40
+	LITERAL  shift 41
+	REAL_DEC_CONST  shift 42
+	'('  shift 43
+	'-'  shift 44
+	ID  shift 45
+	INC  shift 46
+	DEC  shift 47
+	.  error
+
+	expr  goto 214
+	logAnd_expr  goto 49
+	not_expr  goto 50
+	comp_expr  goto 51
+	location  goto 52
+	method  goto 53
+	add_expr  goto 54
+	term  goto 55
+	factor  goto 56
+	incdec  goto 57
 
 
-198: shift/reduce conflict (shift 74, reduce 128) on INC
-198: shift/reduce conflict (shift 75, reduce 128) on DEC
 state 198
-	assign : location . '=' expr  (96)
-	assign : location . '=' assign  (97)
-	factor : location .  (128)
-	incdec : location . INC  (136)
-	incdec : location . DEC  (138)
+	singlestmt : READ expr ',' . location  (60)
+	stmt : READ expr ',' . location separator  (80)
 
-	'='  shift 181
-	INC  shift 74
-	DEC  shift 75
-	FALSE  reduce 128
-	TRUE  reduce 128
-	RETURN  reduce 128
-	IF  reduce 128
-	ELSE  reduce 128
-	WHILE  reduce 128
-	BREAK  reduce 128
-	PRINT  reduce 128
-	READ  reduce 128
-	PRINTLN  reduce 128
-	UNLESS  reduce 128
-	NOT  reduce 128
-	AND  reduce 128
-	OR  reduce 128
-	PUTS  reduce 128
-	DEC_CONST  reduce 128
-	REAL_DEC_CONST  reduce 128
-	'('  reduce 128
-	'{'  reduce 128
-	'}'  reduce 128
-	'*'  reduce 128
-	'/'  reduce 128
-	'+'  reduce 128
-	'-'  reduce 128
-	GE  reduce 128
-	'>'  reduce 128
-	LE  reduce 128
-	'<'  reduce 128
-	NE  reduce 128
-	EQ  reduce 128
-	ID  reduce 128
-	'%'  reduce 128
+	ID  shift 70
+	.  error
+
+	location  goto 215
 
 
 state 199
-	nestedassign : location . ',' nestedassign ',' expr  (99)
-	nestedassign : location . '=' expr  (100)
-
-	'='  shift 210
-	','  shift 211
-	.  error
-
-
-state 200
-	listedassign : location ',' nestedassign . ',' expr  (98)
-
-	','  shift 212
-	.  error
-
-
-state 201
-	addassign : location ADDASSIGN expr .  (94)
-	expr : expr . OR logAnd_expr  (103)
-
-	OR  shift 71
-	FALSE  reduce 94
-	TRUE  reduce 94
-	RETURN  reduce 94
-	IF  reduce 94
-	ELSE  reduce 94
-	WHILE  reduce 94
-	BREAK  reduce 94
-	PRINT  reduce 94
-	READ  reduce 94
-	PRINTLN  reduce 94
-	UNLESS  reduce 94
-	NOT  reduce 94
-	PUTS  reduce 94
-	DEC_CONST  reduce 94
-	REAL_DEC_CONST  reduce 94
-	'('  reduce 94
-	'{'  reduce 94
-	'}'  reduce 94
-	'-'  reduce 94
-	ID  reduce 94
-	INC  reduce 94
-	DEC  reduce 94
-
-
-state 202
-	subassign : location SUBASSIGN expr .  (95)
-	expr : expr . OR logAnd_expr  (103)
-
-	OR  shift 71
-	FALSE  reduce 95
-	TRUE  reduce 95
-	RETURN  reduce 95
-	IF  reduce 95
-	ELSE  reduce 95
-	WHILE  reduce 95
-	BREAK  reduce 95
-	PRINT  reduce 95
-	READ  reduce 95
-	PRINTLN  reduce 95
-	UNLESS  reduce 95
-	NOT  reduce 95
-	PUTS  reduce 95
-	DEC_CONST  reduce 95
-	REAL_DEC_CONST  reduce 95
-	'('  reduce 95
-	'{'  reduce 95
-	'}'  reduce 95
-	'-'  reduce 95
-	ID  reduce 95
-	INC  reduce 95
-	DEC  reduce 95
-
-
-state 203
-	meth : modifier ID $$2 '(' params ')' RIGHTARROW type $$3 . body  (24)
-
-	'{'  shift 125
-	.  error
-
-	body  goto 213
-
-
-state 204
-	stmt : IF code '(' expr . ')' stmt  (71)
-	stmt : IF code '(' expr . ')' stmt ELSE $$11 stmt  (73)
-	expr : expr . OR logAnd_expr  (103)
-
-	OR  shift 71
-	')'  shift 214
-	.  error
-
-
-state 205
-	stmt : WHILE $$12 '(' expr . ')' stmt  (77)
-	expr : expr . OR logAnd_expr  (103)
-
-	OR  shift 71
-	')'  shift 215
-	.  error
-
-
-206: reduce/reduce conflict (reduce 62, reduce 87) on IF
-state 206
-	singlestmt : READ LITERAL ',' location .  (62)
-	stmt : READ LITERAL ',' location .  (87)
-
-	FALSE  reduce 87
-	TRUE  reduce 87
-	RETURN  reduce 87
-	IF  reduce 62
-	ELSE  reduce 87
-	WHILE  reduce 87
-	BREAK  reduce 87
-	PRINT  reduce 87
-	READ  reduce 87
-	PRINTLN  reduce 87
-	UNLESS  reduce 62
-	NOT  reduce 87
-	PUTS  reduce 87
-	DEC_CONST  reduce 87
-	REAL_DEC_CONST  reduce 87
-	'('  reduce 87
-	'{'  reduce 87
-	'}'  reduce 87
-	'-'  reduce 87
-	ID  reduce 87
-	INC  reduce 87
-	DEC  reduce 87
-
-
-state 207
-	inline : LITERAL ',' inline .  (90)
-
-	.  reduce 90
-
-
-state 208
-	inline : expr ',' inline .  (89)
-
-	.  reduce 89
-
-
-state 209
-	stmt : expr TIMES $$13 stmt .  (79)
+	stmt : PRINTLN inline separator .  (79)
 
 	.  reduce 79
 
 
-state 210
-	nestedassign : location '=' . expr  (100)
+state 200
+	inline : expr ',' . inline  (84)
 
-	FALSE  shift 36
-	TRUE  shift 37
-	NOT  shift 38
-	DEC_CONST  shift 39
-	REAL_DEC_CONST  shift 40
-	'('  shift 41
-	'-'  shift 42
-	ID  shift 43
-	INC  shift 44
-	DEC  shift 45
+	FALSE  shift 37
+	TRUE  shift 38
+	NOT  shift 39
+	DEC_CONST  shift 40
+	LITERAL  shift 41
+	REAL_DEC_CONST  shift 42
+	'('  shift 43
+	'-'  shift 44
+	ID  shift 45
+	INC  shift 46
+	DEC  shift 47
 	.  error
 
-	expr  goto 216
-	logAnd_expr  goto 47
-	not_expr  goto 48
-	comp_expr  goto 49
-	location  goto 50
-	method  goto 51
-	add_expr  goto 52
-	term  goto 53
-	factor  goto 54
-	incdec  goto 55
+	inline  goto 216
+	expr  goto 179
+	logAnd_expr  goto 49
+	not_expr  goto 50
+	comp_expr  goto 51
+	location  goto 52
+	method  goto 53
+	add_expr  goto 54
+	term  goto 55
+	factor  goto 56
+	incdec  goto 57
+
+
+state 201
+	block : '{' stmts '}' .  (86)
+
+	.  reduce 86
+
+
+state 202
+	stmt : singlestmt IF expr . separator  (71)
+	expr : expr . OR logAnd_expr  (96)
+
+	OR  shift 73
+	';'  shift 96
+	.  error
+
+	separator  goto 217
+
+
+state 203
+	stmt : singlestmt UNLESS expr . separator  (72)
+	expr : expr . OR logAnd_expr  (96)
+
+	OR  shift 73
+	';'  shift 96
+	.  error
+
+	separator  goto 218
+
+
+state 204
+	stmt : expr TIMES $$13 . stmt  (76)
+
+	FALSE  shift 37
+	TRUE  shift 38
+	RETURN  shift 153
+	IF  shift 154
+	WHILE  shift 155
+	BREAK  shift 156
+	READ  shift 157
+	PRINTLN  shift 158
+	NOT  shift 39
+	DEC_CONST  shift 40
+	LITERAL  shift 41
+	REAL_DEC_CONST  shift 42
+	'('  shift 43
+	'{'  shift 159
+	'-'  shift 44
+	';'  shift 96
+	ID  shift 45
+	INC  shift 46
+	DEC  shift 47
+	.  error
+
+	stmt  goto 219
+	block  goto 162
+	singlestmt  goto 163
+	separator  goto 164
+	expr  goto 165
+	logAnd_expr  goto 49
+	not_expr  goto 50
+	comp_expr  goto 51
+	addassign  goto 166
+	subassign  goto 167
+	assign  goto 168
+	location  goto 169
+	method  goto 53
+	listedassign  goto 170
+	add_expr  goto 54
+	term  goto 55
+	factor  goto 56
+	incdec  goto 57
+
+
+state 205
+	assign : location '=' expr .  (89)
+	expr : expr . OR logAnd_expr  (96)
+
+	OR  shift 73
+	IF  reduce 89
+	UNLESS  reduce 89
+	';'  reduce 89
+
+
+state 206
+	assign : location '=' assign .  (90)
+
+	.  reduce 90
+
+
+state 207
+	assign : location . '=' expr  (89)
+	assign : location . '=' assign  (90)
+	factor : location .  (122)
+	incdec : location . INC  (131)
+	incdec : location . DEC  (133)
+
+	'='  shift 188
+	INC  shift 76
+	DEC  shift 77
+	IF  reduce 122
+	UNLESS  reduce 122
+	AND  reduce 122
+	OR  reduce 122
+	'*'  reduce 122
+	'/'  reduce 122
+	'+'  reduce 122
+	'-'  reduce 122
+	';'  reduce 122
+	IDIV  reduce 122
+	GE  reduce 122
+	'>'  reduce 122
+	LE  reduce 122
+	'<'  reduce 122
+	NE  reduce 122
+	EQ  reduce 122
+	'%'  reduce 122
+
+
+state 208
+	nestedassign : location . ',' nestedassign ',' expr  (92)
+	nestedassign : location . '=' expr  (93)
+
+	'='  shift 220
+	','  shift 221
+	.  error
+
+
+state 209
+	listedassign : location ',' nestedassign . ',' expr  (91)
+
+	','  shift 222
+	.  error
+
+
+state 210
+	addassign : location ADDASSIGN expr .  (87)
+	expr : expr . OR logAnd_expr  (96)
+
+	OR  shift 73
+	IF  reduce 87
+	UNLESS  reduce 87
+	';'  reduce 87
 
 
 state 211
-	nestedassign : location ',' . nestedassign ',' expr  (99)
+	subassign : location SUBASSIGN expr .  (88)
+	expr : expr . OR logAnd_expr  (96)
 
-	ID  shift 68
-	.  error
-
-	location  goto 199
-	nestedassign  goto 217
+	OR  shift 73
+	IF  reduce 88
+	UNLESS  reduce 88
+	';'  reduce 88
 
 
 state 212
-	listedassign : location ',' nestedassign ',' . expr  (98)
+	meth : modifier ID $$2 '(' params ')' RIGHTARROW type $$3 . body  (24)
 
-	FALSE  shift 36
-	TRUE  shift 37
-	NOT  shift 38
-	DEC_CONST  shift 39
-	REAL_DEC_CONST  shift 40
-	'('  shift 41
-	'-'  shift 42
-	ID  shift 43
-	INC  shift 44
-	DEC  shift 45
+	'{'  shift 132
 	.  error
 
-	expr  goto 218
-	logAnd_expr  goto 47
-	not_expr  goto 48
-	comp_expr  goto 49
-	location  goto 50
-	method  goto 51
-	add_expr  goto 52
-	term  goto 53
-	factor  goto 54
-	incdec  goto 55
+	body  goto 223
 
 
 state 213
+	stmt : IF code '(' expr . ')' stmt  (68)
+	stmt : IF code '(' expr . ')' stmt ELSE $$11 stmt  (70)
+	expr : expr . OR logAnd_expr  (96)
+
+	OR  shift 73
+	')'  shift 224
+	.  error
+
+
+state 214
+	stmt : WHILE $$12 '(' expr . ')' stmt  (74)
+	expr : expr . OR logAnd_expr  (96)
+
+	OR  shift 73
+	')'  shift 225
+	.  error
+
+
+state 215
+	singlestmt : READ expr ',' location .  (60)
+	stmt : READ expr ',' location . separator  (80)
+
+	';'  shift 96
+	IF  reduce 60
+	UNLESS  reduce 60
+
+	separator  goto 226
+
+
+state 216
+	inline : expr ',' inline .  (84)
+
+	.  reduce 84
+
+
+state 217
+	stmt : singlestmt IF expr separator .  (71)
+
+	.  reduce 71
+
+
+state 218
+	stmt : singlestmt UNLESS expr separator .  (72)
+
+	.  reduce 72
+
+
+state 219
+	stmt : expr TIMES $$13 stmt .  (76)
+
+	.  reduce 76
+
+
+state 220
+	nestedassign : location '=' . expr  (93)
+
+	FALSE  shift 37
+	TRUE  shift 38
+	NOT  shift 39
+	DEC_CONST  shift 40
+	LITERAL  shift 41
+	REAL_DEC_CONST  shift 42
+	'('  shift 43
+	'-'  shift 44
+	ID  shift 45
+	INC  shift 46
+	DEC  shift 47
+	.  error
+
+	expr  goto 227
+	logAnd_expr  goto 49
+	not_expr  goto 50
+	comp_expr  goto 51
+	location  goto 52
+	method  goto 53
+	add_expr  goto 54
+	term  goto 55
+	factor  goto 56
+	incdec  goto 57
+
+
+state 221
+	nestedassign : location ',' . nestedassign ',' expr  (92)
+
+	ID  shift 70
+	.  error
+
+	location  goto 208
+	nestedassign  goto 228
+
+
+state 222
+	listedassign : location ',' nestedassign ',' . expr  (91)
+
+	FALSE  shift 37
+	TRUE  shift 38
+	NOT  shift 39
+	DEC_CONST  shift 40
+	LITERAL  shift 41
+	REAL_DEC_CONST  shift 42
+	'('  shift 43
+	'-'  shift 44
+	ID  shift 45
+	INC  shift 46
+	DEC  shift 47
+	.  error
+
+	expr  goto 229
+	logAnd_expr  goto 49
+	not_expr  goto 50
+	comp_expr  goto 51
+	location  goto 52
+	method  goto 53
+	add_expr  goto 54
+	term  goto 55
+	factor  goto 56
+	incdec  goto 57
+
+
+state 223
 	meth : modifier ID $$2 '(' params ')' RIGHTARROW type $$3 body .  (24)
 
 	.  reduce 24
 
 
-state 214
-	stmt : IF code '(' expr ')' . stmt  (71)
-	stmt : IF code '(' expr ')' . stmt ELSE $$11 stmt  (73)
-
-	FALSE  shift 36
-	TRUE  shift 37
-	RETURN  shift 145
-	IF  shift 146
-	WHILE  shift 147
-	BREAK  shift 148
-	PRINT  shift 149
-	READ  shift 150
-	PRINTLN  shift 151
-	NOT  shift 38
-	PUTS  shift 152
-	DEC_CONST  shift 39
-	REAL_DEC_CONST  shift 40
-	'('  shift 41
-	'{'  shift 153
-	'-'  shift 42
-	ID  shift 43
-	INC  shift 44
-	DEC  shift 45
-	.  error
-
-	stmt  goto 219
-	block  goto 156
-	singlestmt  goto 157
-	expr  goto 158
-	logAnd_expr  goto 47
-	not_expr  goto 48
-	comp_expr  goto 49
-	addassign  goto 159
-	subassign  goto 160
-	assign  goto 161
-	location  goto 162
-	method  goto 51
-	listedassign  goto 163
-	add_expr  goto 52
-	term  goto 53
-	factor  goto 54
-	incdec  goto 55
-
-
-state 215
-	stmt : WHILE $$12 '(' expr ')' . stmt  (77)
-
-	FALSE  shift 36
-	TRUE  shift 37
-	RETURN  shift 145
-	IF  shift 146
-	WHILE  shift 147
-	BREAK  shift 148
-	PRINT  shift 149
-	READ  shift 150
-	PRINTLN  shift 151
-	NOT  shift 38
-	PUTS  shift 152
-	DEC_CONST  shift 39
-	REAL_DEC_CONST  shift 40
-	'('  shift 41
-	'{'  shift 153
-	'-'  shift 42
-	ID  shift 43
-	INC  shift 44
-	DEC  shift 45
-	.  error
-
-	stmt  goto 220
-	block  goto 156
-	singlestmt  goto 157
-	expr  goto 158
-	logAnd_expr  goto 47
-	not_expr  goto 48
-	comp_expr  goto 49
-	addassign  goto 159
-	subassign  goto 160
-	assign  goto 161
-	location  goto 162
-	method  goto 51
-	listedassign  goto 163
-	add_expr  goto 52
-	term  goto 53
-	factor  goto 54
-	incdec  goto 55
-
-
-state 216
-	nestedassign : location '=' expr .  (100)
-	expr : expr . OR logAnd_expr  (103)
-
-	OR  shift 71
-	','  reduce 100
-
-
-state 217
-	nestedassign : location ',' nestedassign . ',' expr  (99)
-
-	','  shift 221
-	.  error
-
-
-state 218
-	listedassign : location ',' nestedassign ',' expr .  (98)
-	expr : expr . OR logAnd_expr  (103)
-
-	OR  shift 71
-	FALSE  reduce 98
-	TRUE  reduce 98
-	RETURN  reduce 98
-	IF  reduce 98
-	ELSE  reduce 98
-	WHILE  reduce 98
-	BREAK  reduce 98
-	PRINT  reduce 98
-	READ  reduce 98
-	PRINTLN  reduce 98
-	UNLESS  reduce 98
-	NOT  reduce 98
-	PUTS  reduce 98
-	DEC_CONST  reduce 98
-	REAL_DEC_CONST  reduce 98
-	'('  reduce 98
-	'{'  reduce 98
-	'}'  reduce 98
-	'-'  reduce 98
-	ID  reduce 98
-	INC  reduce 98
-	DEC  reduce 98
-
-
-state 219
-	stmt : IF code '(' expr ')' stmt .  (71)
-	stmt : IF code '(' expr ')' stmt . ELSE $$11 stmt  (73)
-
-	ELSE  shift 222
-	FALSE  reduce 71
-	TRUE  reduce 71
-	RETURN  reduce 71
-	IF  reduce 71
-	WHILE  reduce 71
-	BREAK  reduce 71
-	PRINT  reduce 71
-	READ  reduce 71
-	PRINTLN  reduce 71
-	NOT  reduce 71
-	PUTS  reduce 71
-	DEC_CONST  reduce 71
-	REAL_DEC_CONST  reduce 71
-	'('  reduce 71
-	'{'  reduce 71
-	'}'  reduce 71
-	'-'  reduce 71
-	ID  reduce 71
-	INC  reduce 71
-	DEC  reduce 71
-
-
-state 220
-	stmt : WHILE $$12 '(' expr ')' stmt .  (77)
-
-	.  reduce 77
-
-
-state 221
-	nestedassign : location ',' nestedassign ',' . expr  (99)
-
-	FALSE  shift 36
-	TRUE  shift 37
-	NOT  shift 38
-	DEC_CONST  shift 39
-	REAL_DEC_CONST  shift 40
-	'('  shift 41
-	'-'  shift 42
-	ID  shift 43
-	INC  shift 44
-	DEC  shift 45
-	.  error
-
-	expr  goto 223
-	logAnd_expr  goto 47
-	not_expr  goto 48
-	comp_expr  goto 49
-	location  goto 50
-	method  goto 51
-	add_expr  goto 52
-	term  goto 53
-	factor  goto 54
-	incdec  goto 55
-
-
-state 222
-	stmt : IF code '(' expr ')' stmt ELSE . $$11 stmt  (73)
-	$$11 : .  (72)
-
-	.  reduce 72
-
-	$$11  goto 224
-
-
-state 223
-	nestedassign : location ',' nestedassign ',' expr .  (99)
-	expr : expr . OR logAnd_expr  (103)
-
-	OR  shift 71
-	','  reduce 99
-
-
 state 224
-	stmt : IF code '(' expr ')' stmt ELSE $$11 . stmt  (73)
+	stmt : IF code '(' expr ')' . stmt  (68)
+	stmt : IF code '(' expr ')' . stmt ELSE $$11 stmt  (70)
 
-	FALSE  shift 36
-	TRUE  shift 37
-	RETURN  shift 145
-	IF  shift 146
-	WHILE  shift 147
-	BREAK  shift 148
-	PRINT  shift 149
-	READ  shift 150
-	PRINTLN  shift 151
-	NOT  shift 38
-	PUTS  shift 152
-	DEC_CONST  shift 39
-	REAL_DEC_CONST  shift 40
-	'('  shift 41
-	'{'  shift 153
-	'-'  shift 42
-	ID  shift 43
-	INC  shift 44
-	DEC  shift 45
+	FALSE  shift 37
+	TRUE  shift 38
+	RETURN  shift 153
+	IF  shift 154
+	WHILE  shift 155
+	BREAK  shift 156
+	READ  shift 157
+	PRINTLN  shift 158
+	NOT  shift 39
+	DEC_CONST  shift 40
+	LITERAL  shift 41
+	REAL_DEC_CONST  shift 42
+	'('  shift 43
+	'{'  shift 159
+	'-'  shift 44
+	';'  shift 96
+	ID  shift 45
+	INC  shift 46
+	DEC  shift 47
 	.  error
 
-	stmt  goto 225
-	block  goto 156
-	singlestmt  goto 157
-	expr  goto 158
-	logAnd_expr  goto 47
-	not_expr  goto 48
-	comp_expr  goto 49
-	addassign  goto 159
-	subassign  goto 160
-	assign  goto 161
-	location  goto 162
-	method  goto 51
-	listedassign  goto 163
-	add_expr  goto 52
-	term  goto 53
-	factor  goto 54
-	incdec  goto 55
+	stmt  goto 230
+	block  goto 162
+	singlestmt  goto 163
+	separator  goto 164
+	expr  goto 165
+	logAnd_expr  goto 49
+	not_expr  goto 50
+	comp_expr  goto 51
+	addassign  goto 166
+	subassign  goto 167
+	assign  goto 168
+	location  goto 169
+	method  goto 53
+	listedassign  goto 170
+	add_expr  goto 54
+	term  goto 55
+	factor  goto 56
+	incdec  goto 57
 
 
 state 225
-	stmt : IF code '(' expr ')' stmt ELSE $$11 stmt .  (73)
+	stmt : WHILE $$12 '(' expr ')' . stmt  (74)
 
-	.  reduce 73
+	FALSE  shift 37
+	TRUE  shift 38
+	RETURN  shift 153
+	IF  shift 154
+	WHILE  shift 155
+	BREAK  shift 156
+	READ  shift 157
+	PRINTLN  shift 158
+	NOT  shift 39
+	DEC_CONST  shift 40
+	LITERAL  shift 41
+	REAL_DEC_CONST  shift 42
+	'('  shift 43
+	'{'  shift 159
+	'-'  shift 44
+	';'  shift 96
+	ID  shift 45
+	INC  shift 46
+	DEC  shift 47
+	.  error
+
+	stmt  goto 231
+	block  goto 162
+	singlestmt  goto 163
+	separator  goto 164
+	expr  goto 165
+	logAnd_expr  goto 49
+	not_expr  goto 50
+	comp_expr  goto 51
+	addassign  goto 166
+	subassign  goto 167
+	assign  goto 168
+	location  goto 169
+	method  goto 53
+	listedassign  goto 170
+	add_expr  goto 54
+	term  goto 55
+	factor  goto 56
+	incdec  goto 57
 
 
-State 43 contains 1 reduce/reduce conflict.
-State 50 contains 2 shift/reduce conflicts.
-State 52 contains 1 shift/reduce conflict.
-State 107 contains 1 shift/reduce conflict.
-State 158 contains 1 reduce/reduce conflict.
-State 159 contains 1 reduce/reduce conflict.
-State 160 contains 1 reduce/reduce conflict.
-State 161 contains 1 reduce/reduce conflict.
-State 162 contains 2 shift/reduce conflicts.
-State 163 contains 1 reduce/reduce conflict.
-State 169 contains 1 reduce/reduce conflict.
-State 170 contains 1 reduce/reduce conflict.
-State 172 contains 1 reduce/reduce conflict.
-State 173 contains 1 reduce/reduce conflict.
-State 175 contains 1 reduce/reduce conflict.
-State 198 contains 2 shift/reduce conflicts.
-State 206 contains 1 reduce/reduce conflict.
+state 226
+	stmt : READ expr ',' location separator .  (80)
+
+	.  reduce 80
 
 
-61 terminals, 60 nonterminals
-144 grammar rules, 226 states
+state 227
+	nestedassign : location '=' expr .  (93)
+	expr : expr . OR logAnd_expr  (96)
+
+	OR  shift 73
+	','  reduce 93
+
+
+state 228
+	nestedassign : location ',' nestedassign . ',' expr  (92)
+
+	','  shift 232
+	.  error
+
+
+state 229
+	listedassign : location ',' nestedassign ',' expr .  (91)
+	expr : expr . OR logAnd_expr  (96)
+
+	OR  shift 73
+	IF  reduce 91
+	UNLESS  reduce 91
+	';'  reduce 91
+
+
+state 230
+	stmt : IF code '(' expr ')' stmt .  (68)
+	stmt : IF code '(' expr ')' stmt . ELSE $$11 stmt  (70)
+
+	ELSE  shift 233
+	FALSE  reduce 68
+	TRUE  reduce 68
+	RETURN  reduce 68
+	IF  reduce 68
+	WHILE  reduce 68
+	BREAK  reduce 68
+	READ  reduce 68
+	PRINTLN  reduce 68
+	NOT  reduce 68
+	DEC_CONST  reduce 68
+	LITERAL  reduce 68
+	REAL_DEC_CONST  reduce 68
+	'('  reduce 68
+	'{'  reduce 68
+	'}'  reduce 68
+	'-'  reduce 68
+	';'  reduce 68
+	ID  reduce 68
+	INC  reduce 68
+	DEC  reduce 68
+
+
+state 231
+	stmt : WHILE $$12 '(' expr ')' stmt .  (74)
+
+	.  reduce 74
+
+
+state 232
+	nestedassign : location ',' nestedassign ',' . expr  (92)
+
+	FALSE  shift 37
+	TRUE  shift 38
+	NOT  shift 39
+	DEC_CONST  shift 40
+	LITERAL  shift 41
+	REAL_DEC_CONST  shift 42
+	'('  shift 43
+	'-'  shift 44
+	ID  shift 45
+	INC  shift 46
+	DEC  shift 47
+	.  error
+
+	expr  goto 234
+	logAnd_expr  goto 49
+	not_expr  goto 50
+	comp_expr  goto 51
+	location  goto 52
+	method  goto 53
+	add_expr  goto 54
+	term  goto 55
+	factor  goto 56
+	incdec  goto 57
+
+
+state 233
+	stmt : IF code '(' expr ')' stmt ELSE . $$11 stmt  (70)
+	$$11 : .  (69)
+
+	.  reduce 69
+
+	$$11  goto 235
+
+
+state 234
+	nestedassign : location ',' nestedassign ',' expr .  (92)
+	expr : expr . OR logAnd_expr  (96)
+
+	OR  shift 73
+	','  reduce 92
+
+
+state 235
+	stmt : IF code '(' expr ')' stmt ELSE $$11 . stmt  (70)
+
+	FALSE  shift 37
+	TRUE  shift 38
+	RETURN  shift 153
+	IF  shift 154
+	WHILE  shift 155
+	BREAK  shift 156
+	READ  shift 157
+	PRINTLN  shift 158
+	NOT  shift 39
+	DEC_CONST  shift 40
+	LITERAL  shift 41
+	REAL_DEC_CONST  shift 42
+	'('  shift 43
+	'{'  shift 159
+	'-'  shift 44
+	';'  shift 96
+	ID  shift 45
+	INC  shift 46
+	DEC  shift 47
+	.  error
+
+	stmt  goto 236
+	block  goto 162
+	singlestmt  goto 163
+	separator  goto 164
+	expr  goto 165
+	logAnd_expr  goto 49
+	not_expr  goto 50
+	comp_expr  goto 51
+	addassign  goto 166
+	subassign  goto 167
+	assign  goto 168
+	location  goto 169
+	method  goto 53
+	listedassign  goto 170
+	add_expr  goto 54
+	term  goto 55
+	factor  goto 56
+	incdec  goto 57
+
+
+state 236
+	stmt : IF code '(' expr ')' stmt ELSE $$11 stmt .  (70)
+
+	.  reduce 70
+
+
+63 terminals, 61 nonterminals
+139 grammar rules, 237 states

@@ -6,7 +6,7 @@
 #include <ctype.h>
 #include "y.tab.h"
 
-#define NUM_RESERVED_NAMES 27
+#define NUM_RESERVED_NAMES 28
 
 int id_or_keyword(char *name);
 
@@ -43,17 +43,17 @@ int id_or_keyword(char *name);
                                return('*');
                             }
 
-
-"/"                        {
-                               //printf("%s\n",yytext);
-                               strcpy(yylval.ystr,yytext);
-                               return('/');
-                            }
 "//"                        {
                                 //printf("%s\n",yytext);
                                 strcpy(yylval.ystr,yytext);
                                 return(IDIV);
                           }
+"/"                        {
+                               //printf("%s\n",yytext);
+                               strcpy(yylval.ystr,yytext);
+                               return('/');
+                            }
+
 
 "%"                        {
                                //printf("%s\n",yytext);
@@ -216,8 +216,8 @@ int id_or_keyword(char *name);
 
 %%
 
-static char *RESERVED_NAMES[NUM_RESERVED_NAMES] = {"false","true","int","return","if","else","while","break","print","read","println","times","use","unless","not","and","or","real","puts","bool","func","class","private","pub","abstract","meth","var"};
-static int KEYWORD_VALUE[NUM_RESERVED_NAMES] = {FALSE,TRUE,INT,RETURN,IF,ELSE,WHILE,BREAK,PRINT,READ,PRINTLN,TIMES,USE,UNLESS,NOT,AND,OR,REAL,PUTS,BOOL,FUNC,CLASS,PRIVATE,PUBLIC,ABSTRACT,METH,VAR};
+static char *RESERVED_NAMES[NUM_RESERVED_NAMES] = {"false","true","int","return","if","else","while","break","try","read","say","times","use","unless","not","and","or","real","puts","bool","func","class","private","pub","abstract","meth","var","str"};
+static int KEYWORD_VALUE[NUM_RESERVED_NAMES] = {FALSE,TRUE,INT,RETURN,IF,ELSE,WHILE,BREAK,TRY,READ,PRINTLN,TIMES,USE,UNLESS,NOT,AND,OR,REAL,PUTS,BOOL,FUNC,CLASS,PRIVATE,PUBLIC,ABSTRACT,METH,VAR,STR};
 
 int id_or_keyword(char *name){
   int i,k;

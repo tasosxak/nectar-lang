@@ -537,6 +537,14 @@ void ProcessRealDeConst(AstNode *p)
    push_vs(p->SymbolNode);
 }
 
+//String
+void ProcessString(AstNode *p)
+{
+
+   push_vs(p->SymbolNode);
+}
+
+
 // Times Statement
 void ProcessTimesStmt(AstNode *p, int lev, int lvalue,int leftChild)
 {
@@ -1522,7 +1530,8 @@ void ProcessIncreaseAfter(AstNode* p, int lev, int leftChild){
 		lhs->sclass = STACK;
 
 		fprintf(text,"iload_ %d\n", lhs->index);
-    fprintf(text,"dup 2\n");
+    fprintf(text,"iload_ %d\n", lhs->index);
+    //fprintf(text,"dup 2\n");
     fprintf(text,"inc\n");
 		fprintf(text,"istore_ %d\n", lhs->index);
 
@@ -3672,6 +3681,33 @@ void ProcessAddExpr(AstNode *p, int lev, int lvalue, int leftChild){
 											break;
 										}
 						break;
+            case STR:
+                  switch(rhs->typos){
+
+                    case STR:
+
+                         sn->typos= STR;
+
+                         if(rhs->sclass == MEMORY)
+                         {
+
+                            fprintf(text,"sload_ %d\n",lhs->index);
+                            fprintf(text,"sload_ %d\n",rhs->index);
+                            fprintf(text,"sadd\n");
+
+                         }
+                         else if(rhs->sclass == CONSTANT)
+                         {
+
+                           fprintf(text,"sload_ %d\n",lhs->index);
+                           fprintf(text,"sconst \"%s\"\n",rhs->stimi);
+                           fprintf(text,"sadd\n");
+
+
+                         }
+                    break;
+                  }
+            break;
 					}
 			  break;
         case STACK:
@@ -3772,7 +3808,35 @@ void ProcessAddExpr(AstNode *p, int lev, int lvalue, int leftChild){
 											break;
 										}
 						break;
-					}
+
+            case STR:
+
+								switch(rhs->typos){
+
+									case STR:
+
+											 sn->typos=STR;
+
+											 if(rhs->sclass == MEMORY)
+											 {
+
+                          fprintf(text,"sload_ %d\n",rhs->index);
+													fprintf(text,"sadd\n");
+
+											 }
+											 else if(rhs->sclass == CONSTANT)
+											 {
+
+
+                         fprintf(text,"sconst \"%d\"\n",rhs->timi);
+                         fprintf(text,"sadd\n");
+
+
+											 }
+									break;
+                }
+            break;
+          }
 			  break;
 			  case CONSTANT:
 
@@ -3787,7 +3851,7 @@ void ProcessAddExpr(AstNode *p, int lev, int lvalue, int leftChild){
 
 												if(rhs->sclass == MEMORY){
 
-                          fprintf(text,"iconst %d\n",lhs->index);
+                          fprintf(text,"iconst %d\n",lhs->timi);
                           fprintf(text,"iload_ %d\n",rhs->index);
                           fprintf(text,"iadd\n");
 
@@ -3804,7 +3868,7 @@ void ProcessAddExpr(AstNode *p, int lev, int lvalue, int leftChild){
 
 												 if(rhs->sclass == MEMORY){
 
-                           fprintf(text,"dconst %d\n",lhs->index);
+                           fprintf(text,"dconst %d\n",lhs->timi);
                            fprintf(text,"dload_ %d\n",rhs->index);
                            fprintf(text,"dadd\n");
 
@@ -3863,7 +3927,33 @@ void ProcessAddExpr(AstNode *p, int lev, int lvalue, int leftChild){
 										 }
 
 							break;
+              case STR:
 
+								 switch(rhs->typos){
+
+									 case STR:
+												sn->typos= STR;
+
+												if(rhs->sclass == MEMORY){
+
+                          fprintf(text,"sconst \"%s\"\n",lhs->stimi);
+                          fprintf(text,"sload_ %d\n",rhs->index);
+                          fprintf(text,"sadd\n");
+
+												 }
+												 else if(rhs->sclass == CONSTANT){
+                          char * str[80];
+                          strcpy(str,lhs->stimi);
+                          strcat(str,rhs->stimi);
+
+                          strcpy(sn->stimi, str);
+
+													sn->sclass=CONSTANT;
+
+												 }
+									 break;
+                 }
+              break;
 						}
 
 			  break;
@@ -4197,7 +4287,7 @@ void ProcessMethodCall(AstNode *p, int lev, int lvalue, int leftChild){
 
 	symbol *sn;
 	sn = new_symbol("");
-	sn->sclass= MEMORY;
+	sn->sclass= STACK;
 
 	sn->typos = p->SymbolNode->typos;
 
@@ -4243,59 +4333,81 @@ void ProcessMulExpr(AstNode *p, int lev, int lvalue, int leftChild)
      {
       case MEMORY:
 
-        switch(lhs->typos){
+            switch(lhs->typos){
 
-          case INT:
+                  case INT:
 
-              switch(rhs->typos){
+                        switch(rhs->typos){
 
-                case INT:
+                          case INT:
 
-                     sn->typos=INT;
+                               sn->typos=INT;
 
-                     if(rhs->sclass == MEMORY)
-                     {
+                               if(rhs->sclass == MEMORY)
+                               {
 
-                        fprintf(text,"iload_ %d\n",lhs->index);
-                        fprintf(text,"iload_ %d\n",rhs->index);
-                        fprintf(text,"imul\n");
+                                  fprintf(text,"iload_ %d\n",lhs->index);
+                                  fprintf(text,"iload_ %d\n",rhs->index);
+                                  fprintf(text,"imul\n");
 
-                     }
-                     else if(rhs->sclass == CONSTANT)
-                     {
+                               }
+                               else if(rhs->sclass == CONSTANT)
+                               {
 
-                       fprintf(text,"iload_ %d\n",lhs->index);
-                       fprintf(text,"iconst %d\n",rhs->timi);
-                       fprintf(text,"imul\n");
-
-
-                     }
-                break;
-
-                case REAL:
-                        sn->typos=REAL;
-
-                         if(rhs->sclass == CONSTANT)
-                         {
-
-                           fprintf(text,"iload_ %d\n",lhs->index);
-                           fprintf(text,"i2d\n");
-                           fprintf(text,"dconst %lf\n",rhs->dtimi);
-                           fprintf(text,"dmul\n");
-
-                         }else if(rhs->sclass == MEMORY){
+                                 fprintf(text,"iload_ %d\n",lhs->index);
+                                 fprintf(text,"iconst %d\n",rhs->timi);
+                                 fprintf(text,"imul\n");
 
 
-                           fprintf(text,"iload_ %d\n",lhs->index);
-                           fprintf(text,"i2d\n");
-                           fprintf(text,"dload_ %d\n",rhs->index);
-                           fprintf(text,"dmul\n");
+                               }
+                          break;
+                          case REAL:
+                                  sn->typos=REAL;
 
-                         }
+                                   if(rhs->sclass == CONSTANT)
+                                   {
 
-                break;
-              }
-            break;
+                                     fprintf(text,"iload_ %d\n",lhs->index);
+                                     fprintf(text,"i2d\n");
+                                     fprintf(text,"dconst %lf\n",rhs->dtimi);
+                                     fprintf(text,"dmul\n");
+
+                                   }else if(rhs->sclass == MEMORY){
+
+
+                                     fprintf(text,"iload_ %d\n",lhs->index);
+                                     fprintf(text,"i2d\n");
+                                     fprintf(text,"dload_ %d\n",rhs->index);
+                                     fprintf(text,"dmul\n");
+
+                                   }
+
+
+                          break;
+                          case STR:
+                                  sn->typos= STR;
+
+                                   if(rhs->sclass == CONSTANT)
+                                   {
+
+                                     fprintf(text,"iload_ %d\n",lhs->index);
+                                     fprintf(text,"i2s\n");
+                                     fprintf(text,"sconst \"%s\"\n",rhs->stimi);
+                                     fprintf(text,"smul\n");
+
+                                   }else if(rhs->sclass == MEMORY){
+
+
+                                     fprintf(text,"iload_ %d\n",lhs->index);
+                                     fprintf(text,"i2s\n");
+                                     fprintf(text,"sload_ %d\n",rhs->index);
+                                     fprintf(text,"smul\n");
+
+                                   }
+                          break;
+                       }
+
+          break;
           case REAL:
 
               switch(rhs->typos){
@@ -4341,8 +4453,8 @@ void ProcessMulExpr(AstNode *p, int lev, int lvalue, int leftChild)
                            }
                     break;
                   }
-          break;
-        }
+              break;
+            }
       break;
       case STACK:
 
@@ -4394,8 +4506,26 @@ void ProcessMulExpr(AstNode *p, int lev, int lvalue, int leftChild)
                          }
 
                 break;
+                case STR:
+                        sn->typos=STR;
+
+                         if(rhs->sclass == CONSTANT)
+                         {
+
+
+                           fprintf(text,"sconst \"%s\"\n",rhs->stimi);
+                           fprintf(text,"smul\n");
+
+                         }else if(rhs->sclass == MEMORY){
+
+                           fprintf(text,"sload_ %d\n",rhs->index);
+                           fprintf(text,"smul\n");
+
+                         }
+
+                break;
               }
-            break;
+          break;
           case REAL:
 
               switch(rhs->typos){
@@ -4441,8 +4571,8 @@ void ProcessMulExpr(AstNode *p, int lev, int lvalue, int leftChild)
                            }
                     break;
                   }
-          break;
-        }
+              break;
+            }
       break;
       case CONSTANT:
 
@@ -4457,7 +4587,7 @@ void ProcessMulExpr(AstNode *p, int lev, int lvalue, int leftChild)
 
                       if(rhs->sclass == MEMORY){
 
-                        fprintf(text,"iconst %d\n",lhs->index);
+                        fprintf(text,"iconst %d\n",lhs->timi);
                         fprintf(text,"iload_ %d\n",rhs->index);
                         fprintf(text,"imul\n");
 
@@ -4474,7 +4604,7 @@ void ProcessMulExpr(AstNode *p, int lev, int lvalue, int leftChild)
 
                        if(rhs->sclass == MEMORY){
 
-                         fprintf(text,"dconst %d\n",lhs->index);
+                         fprintf(text,"dconst %d\n",lhs->timi);
                          fprintf(text,"dload_ %d\n",rhs->index);
                          fprintf(text,"dmul\n");
 
@@ -4482,6 +4612,34 @@ void ProcessMulExpr(AstNode *p, int lev, int lvalue, int leftChild)
                        else if(rhs->sclass == CONSTANT){
 
                         sn->dtimi = lhs->timi * rhs->dtimi;
+                        sn->sclass=CONSTANT;
+
+                       }
+                 break;
+                 case STR:
+                       sn->typos=STR;
+
+                       if(rhs->sclass == MEMORY){
+
+                         fprintf(text,"iconst %d\n",lhs->timi);
+                         fprintf(text,"sload_ %d\n",rhs->index);
+                         fprintf(text,"smul\n");
+
+                       }
+                       else if(rhs->sclass == CONSTANT){
+                        char* str[80];
+                        if(lhs->timi !=0){
+                          strcpy(str,rhs->stimi);
+                          int i;
+                          for(i=0; i < lhs->timi - 1 ; i++)
+                              strcat(str, rhs->stimi);
+                        }
+                        else {
+                          strcpy(str,"");
+                        }
+
+                        strcpy(sn->stimi, str);
+
                         sn->sclass=CONSTANT;
 
                        }
@@ -4535,9 +4693,8 @@ void ProcessMulExpr(AstNode *p, int lev, int lvalue, int leftChild)
             break;
 
           }
-
       break;
-     }
+    }
   }
    else if (p->pAstNode[1]->NodeType == astDivOp || p->pAstNode[1]->NodeType == astIdivOp ) {
 
@@ -4897,7 +5054,7 @@ void ProcessMulExpr(AstNode *p, int lev, int lvalue, int leftChild)
                         }
                         else if(rhs->sclass == CONSTANT){
 
-                          if(rhs->dtimi !=0){
+                          if(rhs->timi !=0){
                              if(p->pAstNode[1]->NodeType == astDivOp){
                                 sn->dtimi = (float)lhs->timi / rhs->timi;
                                 sn->typos= REAL;
@@ -5855,198 +6012,21 @@ void ProcessReturnStmt(AstNode *p,int lev,int lvalue,int leftChild){
 
 
 
-//Print Number Statement
+//Print Statement -DEAD
 void ProcessPrintStmt(AstNode *p,int lev,int lvalue,int leftChild){
 
-	symbol *rhs;
-
 	//Code Generation for expression
-	CodeGeneration(p->pAstNode[0],lev+1,0,0);
-	rhs = pop_vs();
-
-
-
-	if(rhs->sclass == MEMORY){
-
-		switch (rhs->typos){
-
-			case BOOL:
-
-					fprintf(text,"iload_ %d\n",rhs->index);
-          fprintf(text,"i2s\n");
-					fprintf(text,"print\n");
-
-			break;
-
-			case INT:
-
-          fprintf(text,"iload_ %d\n",rhs->index);
-          fprintf(text,"i2s\n");
-          fprintf(text,"print\n");
-			break;
-			case REAL:
-
-          fprintf(text,"dload_ %d\n",rhs->index);
-          fprintf(text,"d2s\n");
-          fprintf(text,"print\n");
-
-			break;
-
-		}
-
-	}
-	else if (rhs->sclass == CONSTANT){
-
-		switch (rhs->typos){
-
-			case BOOL:
-
-            fprintf(text,"iconst %d\n",rhs->timi);
-            fprintf(text,"i2s\n");
-            fprintf(text,"print\n");
-			break;
-			case INT:
-
-            fprintf(text,"iconst %d\n",rhs->timi);
-            fprintf(text,"i2s\n");
-            fprintf(text,"print\n");
-			break;
-			case REAL:
-
-            fprintf(text,"dconst %lf\n",rhs->dtimi);
-            fprintf(text,"d2s\n");
-            fprintf(text,"print\n");
-
-			break;
-
-		}
-
-
-	}
-	else if(rhs->sclass == STACK){
-
-		switch (rhs->typos){
-
-			case BOOL:
-
-          fprintf(text,"i2s\n");
-					fprintf(text,"print\n");
-
-			break;
-
-			case INT:
-
-          fprintf(text,"i2s\n");
-          fprintf(text,"print\n");
-			break;
-			case REAL:
-
-          fprintf(text,"d2s\n");
-          fprintf(text,"print\n");
-
-			break;
-
-		}
-
-	}
+	CodeGeneration(p->pAstNode[0],lev+1,0,1);
+	//rhs = pop_vs();
 
 }
 
-//PrintLn Number Statement
+//PrintLn Statement
 void ProcessPrintLnStmt(AstNode *p,int lev,int lvalue,int leftChild){
 
-	symbol *rhs;
-
 	//Code Generation for expression
-	CodeGeneration(p->pAstNode[0],lev+1,0,0);
-	rhs = pop_vs();
-
-
-	if(rhs->sclass == MEMORY){
-
-		switch (rhs->typos){
-
-			case BOOL:
-
-					fprintf(text,"iload_ %d\n",rhs->index);
-          fprintf(text,"i2s\n");
-					fprintf(text,"print\n");
-
-			break;
-
-			case INT:
-          fprintf(text,"iload_ %d\n",rhs->index);
-          fprintf(text,"i2s\n");
-          fprintf(text,"print\n");
-			break;
-			case REAL:
-
-          fprintf(text,"dload_ %f\n",rhs->index);
-          fprintf(text,"d2s\n");
-          fprintf(text,"print\n");
-			break;
-
-		}
-
-	}
-  else if(rhs->sclass == STACK){
-
-		switch (rhs->typos){
-
-			case BOOL:
-
-
-          fprintf(text,"i2s\n");
-					fprintf(text,"print\n");
-
-			break;
-
-			case INT:
-
-          fprintf(text,"i2s\n");
-          fprintf(text,"print\n");
-			break;
-			case REAL:
-
-
-          fprintf(text,"d2s\n");
-          fprintf(text,"print\n");
-			break;
-
-		}
-
-	}
-	else if (rhs->sclass == CONSTANT){
-
-		switch (rhs->typos){
-
-			case BOOL:
-
-          fprintf(text,"iconst %d\n",rhs->timi);
-          fprintf(text,"i2s\n");
-          fprintf(text,"print\n");
-			break;
-
-			case INT:
-
-          fprintf(text,"iconst %d\n",rhs->timi);
-          fprintf(text,"i2s\n");
-          fprintf(text,"print\n");
-			break;
-			case REAL:
-
-          fprintf(text,"dconst %lf\n",rhs->dtimi);
-          fprintf(text,"d2s\n");
-          fprintf(text,"print\n");
-
-			break;
-
-		}
-
-
-	}
-
-  fprintf(text,"nl\n");
+	CodeGeneration(p->pAstNode[0],lev+1,0,2);
+	//rhs = pop_vs();
 
 }
 
@@ -6054,20 +6034,18 @@ void ProcessPrintLnStmt(AstNode *p,int lev,int lvalue,int leftChild){
  void ProcessLiteralStmt(AstNode *p,int lev,int lvalue,int leftChild){
 
 
-	 fprintf(data,"sconst %s\n",p->SymbolNode->name);
+	 fprintf(text,"sconst \"%s\"\n",p->SymbolNode->stimi);
 
 
  }
 
-  void ProcessLiteralLnStmt(AstNode *p,int lev,int lvalue,int leftChild){
+void ProcessLiteralLnStmt(AstNode *p,int lev,int lvalue,int leftChild){
 
 
-	 fprintf(data,"sconst %s\n",p->SymbolNode->name);
+	 fprintf(text,"sconst \"%s\"\n",p->SymbolNode->stimi);
 
 
  }
-
-
 
 //Print Literal Statement
 void ProcessPrintLtStmt(AstNode *p,int lev,int lvalue,int leftChild){
@@ -6096,19 +6074,111 @@ void ProcessPrintLnLtStmt(AstNode *p,int lev,int lvalue,int leftChild){
 }
 
 
-void ProcessPutsStmt(AstNode *p,int lev,int lvalue,int leftChild){
-
-	symbol *rhs;
-
-	CodeGeneration(p->pAstNode[0],lev+1,0,0);
-
-
-}
 
 void ProcessExprInline(AstNode *p,int lev,int lvalue,int leftChild){
 
-	 ProcessPrintStmt(p,lev+1,0,0);
-	 CodeGeneration(p->pAstNode[1],lev+1,0,0);
+   symbol *rhs;
+   CodeGeneration(p->pAstNode[0],lev+1,0,0);
+   rhs = pop_vs();
+
+   if(rhs->sclass == MEMORY){
+
+       		switch (rhs->typos){
+
+       			case BOOL:
+
+       					fprintf(text,"iload_ %d\n",rhs->index);
+                 fprintf(text,"i2s\n");
+       					fprintf(text,"print\n");
+
+       			break;
+
+       			case INT:
+                 fprintf(text,"iload_ %d\n",rhs->index);
+                 fprintf(text,"i2s\n");
+                 fprintf(text,"print\n");
+       			break;
+       			case REAL:
+
+                 fprintf(text,"dload_ %d\n",rhs->index);
+                 fprintf(text,"d2s\n");
+                 fprintf(text,"print\n");
+       			break;
+             case STR:
+
+                 fprintf(text,"sload_ %d\n",rhs->index);
+                 fprintf(text,"print\n");
+       			break;
+
+       		}
+
+ 	}
+   else if(rhs->sclass == STACK){
+
+         		switch (rhs->typos){
+
+         			case BOOL:
+
+
+                   fprintf(text,"i2s\n");
+         					fprintf(text,"print\n");
+
+         			break;
+
+         			case INT:
+
+                   fprintf(text,"i2s\n");
+                   fprintf(text,"print\n");
+         			break;
+         			case REAL:
+
+                   fprintf(text,"d2s\n");
+                   fprintf(text,"print\n");
+         			break;
+               case STR:
+                   fprintf(text,"print\n");
+         			break;
+
+         		}
+
+ 	}
+ 	else if (rhs->sclass == CONSTANT){
+
+       		switch (rhs->typos){
+
+       			case BOOL:
+
+                 fprintf(text,"iconst %d\n",rhs->timi);
+                 fprintf(text,"i2s\n");
+                 fprintf(text,"print\n");
+       			break;
+
+       			case INT:
+
+                 fprintf(text,"iconst %d\n",rhs->timi);
+                 fprintf(text,"i2s\n");
+                 fprintf(text,"print\n");
+       			break;
+       			case REAL:
+
+                 fprintf(text,"dconst %lf\n",rhs->dtimi);
+                 fprintf(text,"d2s\n");
+                 fprintf(text,"print\n");
+
+       			break;
+             case STR:
+
+                 fprintf(text,"sconst \"%s\"\n",rhs->stimi);
+                 fprintf(text,"print\n");
+
+       			break;
+
+       		}
+
+
+ 	}
+
+	 CodeGeneration(p->pAstNode[1],lev+1,0,leftChild);
 
 }
 
@@ -6121,8 +6191,117 @@ void ProcessLiteralInline(AstNode *p,int lev,int lvalue,int leftChild){
 
 void ProcessSingleExprInline(AstNode *p,int lev,int lvalue,int leftChild){
 
-	 ProcessPrintLnStmt(p,lev+1,0,0);
-	 //CodeGeneration(p->pAstNode[1],lev+1,0,0);
+  symbol *rhs;
+  CodeGeneration(p->pAstNode[0],lev+1,0,0);
+  rhs = pop_vs();
+
+  if(rhs->sclass == MEMORY){
+
+         switch (rhs->typos){
+
+           case BOOL:
+
+               fprintf(text,"iload_ %d\n",rhs->index);
+                fprintf(text,"i2s\n");
+               fprintf(text,"print\n");
+
+           break;
+
+           case INT:
+                fprintf(text,"iload_ %d\n",rhs->index);
+                fprintf(text,"i2s\n");
+                fprintf(text,"print\n");
+           break;
+           case REAL:
+
+                fprintf(text,"dload_ %d\n",rhs->index);
+                fprintf(text,"d2s\n");
+                fprintf(text,"print\n");
+           break;
+            case STR:
+
+                fprintf(text,"sload_ %d\n",rhs->index);
+                fprintf(text,"print\n");
+           break;
+
+         }
+
+         fprintf(text,"nl\n");
+
+ }
+  else if(rhs->sclass == STACK){
+
+           switch (rhs->typos){
+
+             case BOOL:
+
+
+                  fprintf(text,"i2s\n");
+                 fprintf(text,"print\n");
+
+             break;
+
+             case INT:
+
+                  fprintf(text,"i2s\n");
+                  fprintf(text,"print\n");
+             break;
+             case REAL:
+
+                  fprintf(text,"d2s\n");
+                  fprintf(text,"print\n");
+             break;
+              case STR:
+                  fprintf(text,"print\n");
+             break;
+
+           }
+
+ }
+ else if (rhs->sclass == CONSTANT){
+
+         switch (rhs->typos){
+
+           case BOOL:
+
+                fprintf(text,"iconst %d\n",rhs->timi);
+                fprintf(text,"i2s\n");
+                fprintf(text,"print\n");
+           break;
+
+           case INT:
+
+                fprintf(text,"iconst %d\n",rhs->timi);
+                fprintf(text,"i2s\n");
+                fprintf(text,"print\n");
+           break;
+           case REAL:
+
+                fprintf(text,"dconst %lf\n",rhs->dtimi);
+                fprintf(text,"d2s\n");
+                fprintf(text,"print\n");
+
+           break;
+            case STR:
+
+                fprintf(text,"sconst \"%s\"\n",rhs->stimi);
+                fprintf(text,"print\n");
+
+           break;
+
+         }
+
+
+ }
+
+  switch(leftChild){
+
+    case 1:
+    break;
+    case 2:
+       fprintf(text,"nl\n");
+    break;
+  }
 
 }
 
@@ -6139,17 +6318,17 @@ void ProcessReadStmt(AstNode *p,int lev,int lvalue,int leftChild){
 	symbol *lhs, *rhs;
 
 	//Code Generation for literal
-	ProcessLiteralStmt(p,lev+1,0,0);
+  CodeGeneration(p->pAstNode[0],lev+1,0,0);
+
+	lhs = pop_vs();
+  fprintf(text,"sconst \"%s\"\n",lhs->stimi);
   NUM_OF_LITERALS++;
 
   fprintf(text,"print\n");
   fprintf(text,"read\n");
 	//Code Generation for location
-	CodeGeneration(p->pAstNode[0],lev+1,0,0);
+	CodeGeneration(p->pAstNode[1],lev+1,0,0);
 	rhs = pop_vs();
-
-
-
 
 	if(rhs->sclass == MEMORY){
 
@@ -6212,6 +6391,9 @@ void CodeGeneration(AstNode *p, int lev, int lvalue, int leftChild)
           //  ProcessPublicClassMod(p,lev);
          break;
          case astAbstractClassMod:
+          //  ProcessAbstractClassMod(p,lev);
+         break;
+         case astStr:
           //  ProcessAbstractClassMod(p,lev);
          break;
          case astBodyClass:
@@ -6340,164 +6522,162 @@ void CodeGeneration(AstNode *p, int lev, int lvalue, int leftChild)
          case astWhileStmt:
              ProcessWhileStmt(p,lev,lvalue,leftChild);
          break;
-		 case astTimesStmt:
+		     case astTimesStmt:
              ProcessTimesStmt(p,lev,lvalue,leftChild);
          break;
          case astBreakStmt:
              ProcessBreakStmt();
          break;
-		 case astPutsStmt:
-			  ProcessPutsStmt(p,lev,lvalue,leftChild);
-		 break;
-		 case astExprInline:
-			  ProcessExprInline(p,lev,lvalue,leftChild);
-		 break;
-		 case astLiteralInline:
-			  ProcessLiteralInline(p,lev,lvalue,leftChild);
-		 break;
-		 case astSingleExprInline:
-			  ProcessSingleExprInline(p,lev,lvalue,leftChild);
-		 break;
-		 case astSingleLiteralInline:
-			  ProcessSingleLiteralInline(p,lev,lvalue,leftChild);
-		 break;
-		 case astPrintStmt:
-			 ProcessPrintStmt(p,lev,lvalue,leftChild);
-		 break;
-		 case astPrintLnStmt:
-			 ProcessPrintLnStmt(p,lev,lvalue,leftChild);
-		 break;
-		 case astReadStmt:
-			ProcessReadStmt(p,lev,lvalue,leftChild);
-		 break;
-		 case astPrintLtStmt:
-			 ProcessPrintLtStmt(p,lev,lvalue,leftChild);
-		 break;
-		 case astPrintLnLtStmt:
-			 ProcessPrintLnLtStmt(p,lev,lvalue,leftChild);
-		 break;
-		 case astExprStmt:
-			 ProcessExprStmt(p,lev,lvalue,leftChild);
-		 break;
-		 case astNotExpr:
-             ProcessNotExpr(p,lev,lvalue,leftChild);
+    		 case astExprInline:
+    			  ProcessExprInline(p,lev,lvalue,leftChild);
+    		 break;
+    		 case astLiteralInline:
+    			  ProcessLiteralInline(p,lev,lvalue,leftChild);
+    		 break;
+    		 case astSingleExprInline:
+    			  ProcessSingleExprInline(p,lev,lvalue,leftChild);
+    		 break;
+    		 case astSingleLiteralInline:
+    			  ProcessSingleLiteralInline(p,lev,lvalue,leftChild);
+    		 break;
+    		 case astPrintStmt:
+    			 ProcessPrintStmt(p,lev,lvalue,leftChild);
+    		 break;
+    		 case astPrintLnStmt:
+    			 ProcessPrintLnStmt(p,lev,lvalue,leftChild);
+    		 break;
+    		 case astReadStmt:
+    			ProcessReadStmt(p,lev,lvalue,leftChild);
+    		 break;
+    		 case astPrintLtStmt:
+    			 ProcessPrintLtStmt(p,lev,lvalue,leftChild);
+    		 break;
+    		 case astPrintLnLtStmt:
+    			 ProcessPrintLnLtStmt(p,lev,lvalue,leftChild);
+    		 break;
+    		 case astExprStmt:
+    			 ProcessExprStmt(p,lev,lvalue,leftChild);
+    		 break;
+    		 case astNotExpr:
+            ProcessNotExpr(p,lev,lvalue,leftChild);
          break;
-		 case astAndExpr:
-             ProcessAndExpr(p,lev,lvalue,leftChild);
+    		 case astAndExpr:
+            ProcessAndExpr(p,lev,lvalue,leftChild);
          break;
-		 case astOrExpr:
-             ProcessOrExpr(p,lev,lvalue,leftChild);
+    		 case astOrExpr:
+            ProcessOrExpr(p,lev,lvalue,leftChild);
          break;
          case astCompExpr:
-             ProcessCompExpr(p,lev,lvalue,leftChild);
+            ProcessCompExpr(p,lev,lvalue,leftChild);
          break;
-		 case astAddAssign:
-             ProcessAddAssign(p,lev,0);
-         break;
-		 case astSubAssign:
-             ProcessSubAssign(p,lev,0);
-         break;
-         case astAssign:
-			 ProcessUniqueAssign(p,lev,0);
-             //ProcessAssign(p,lev,0);
-         break;
-		 case astAssignSeq:
-			 ProcessAboveMultiAssignSeq(p,lev,0);
-			 //ProcessAssignSeq(p,lev,0);
-		 break;
-		 case astListedAssign:
-			 ProcessListedAssign(p,lev,0);
-		 break;
-		 case astNestedAssign:
-			 ProcessNestedAssign(p,lev,0);
-		 break;
-		 case astEmbedAssign:
-			 ProcessEmbedAssign(p,lev,0);
-		 break;
-         case astAddExpr:
-             ProcessAddExpr(p,lev,lvalue,leftChild);
-         break;
-         case astAddExprLast:
-             //ProcessAddExprLast(p,lev,lvalue,leftChild);
-         break;
-         case astNullStmt:
-             //ProcessNullStmt(p,lev,lvalue,leftChild);
-         break;
-         case astMethodCall:
-             ProcessMethodCall(p,lev,lvalue,leftChild);
-         break;
-         case astGeOp:
-             //ProcessGeOp(p,lev,lvalue,leftChild);
-         break;
-         case astGOp:
-             //ProcessGOp(p,lev,lvalue,leftChild);
-         break;
-         case astLeOp:
-             //ProcessLeOp(p,lev,lvalue,leftChild);
-         break;
-		 case astLOp:
-             //ProcessLOp(p,lev,lvalue,leftChild);
-         break;
-		 case astNeOp:
-             //ProcessNeOp(p,lev,lvalue,leftChild);
-         break;
-		 case astEOp:
-             //ProcessEOp(p,lev,lvalue,leftChild);
-         break;
-		 case astAddOp:
-             //ProcessAddOp(p,lev,lvalue,leftChild);
-         break;
-		 case astSubOp:
-             //ProcessSubOp(p,lev,lvalue,leftChild);
-         break;
-		 case astMulExpr:
-             ProcessMulExpr(p,lev,lvalue,leftChild);
-         break;
-		 case astMulOp:
-             //ProcessMulOp(p,lev,lvalue,leftChild);
-         break;
-		 case astDivOp:
-             //ProcessDivOp(p,lev,lvalue,leftChild);
-         break;
-		 case astModOp:
-             //ProcessModOp(p,lev,lvalue,leftChild);
-         break;
-		 case astRealDeConst:
-             ProcessRealDeConst(p);
-         break;
-		 case astDeConst:
-             ProcessDeConst(p);
-         break;
-		 case astTrue:
-             ProcessTrue(p);
-         break;
-		 case astIncreaseAfter:
-			 ProcessIncreaseAfter(p,lev,leftChild);
-		 break;
-		 case astIncreaseBefore:
-			 ProcessIncreaseBefore(p,lev,leftChild);
-		 break;
-		 case astDecreaseAfter:
-			 ProcessDecreaseAfter(p,lev,leftChild);
-		 break;
-		 case astDecreaseBefore:
-			 ProcessDecreaseBefore(p,lev,leftChild);
-		 break;
-		 case astActualsEmpty:
-             //ProcessActualsEmpty(p,lev,lvalue,leftChild);
-         break;
-		 case astFalse:
-             ProcessFalse(p);
-         break;
-		 case astActuals:
-             ProcessActuals(p,lev,lvalue,leftChild);
-         break;
-		 case astArgsSeq:
-             ProcessArgsSeq(p,lev,lvalue,leftChild);
-         break;
-		 case astArgsEmpty:
-             //ProcessArgsEmpty(p,lev,lvalue,leftChild);
-         break;
+    		 case astAddAssign:
+            ProcessAddAssign(p,lev,0);
+        break;
+    		case astSubAssign:
+            ProcessSubAssign(p,lev,0);
+        break;
+        case astAssign:
+    			 ProcessUniqueAssign(p,lev,0);
+        break;
+    		case astAssignSeq:
+    			 ProcessAboveMultiAssignSeq(p,lev,0);
+    		break;
+    		case astListedAssign:
+    			 ProcessListedAssign(p,lev,0);
+    		break;
+    		case astNestedAssign:
+    			 ProcessNestedAssign(p,lev,0);
+    		break;
+    		case astEmbedAssign:
+    			 ProcessEmbedAssign(p,lev,0);
+    		break;
+        case astAddExpr:
+           ProcessAddExpr(p,lev,lvalue,leftChild);
+        break;
+        case astAddExprLast:
+           //ProcessAddExprLast(p,lev,lvalue,leftChild);
+        break;
+        case astNullStmt:
+           //ProcessNullStmt(p,lev,lvalue,leftChild);
+        break;
+        case astMethodCall:
+           ProcessMethodCall(p,lev,lvalue,leftChild);
+        break;
+        case astGeOp:
+           //ProcessGeOp(p,lev,lvalue,leftChild);
+        break;
+        case astGOp:
+           //ProcessGOp(p,lev,lvalue,leftChild);
+        break;
+        case astLeOp:
+           //ProcessLeOp(p,lev,lvalue,leftChild);
+        break;
+    		case astLOp:
+                 //ProcessLOp(p,lev,lvalue,leftChild);
+        break;
+    		case astNeOp:
+                 //ProcessNeOp(p,lev,lvalue,leftChild);
+        break;
+    		case astEOp:
+                 //ProcessEOp(p,lev,lvalue,leftChild);
+        break;
+    		case astAddOp:
+                 //ProcessAddOp(p,lev,lvalue,leftChild);
+        break;
+    		case astSubOp:
+                 //ProcessSubOp(p,lev,lvalue,leftChild);
+        break;
+    	  case astMulExpr:
+            ProcessMulExpr(p,lev,lvalue,leftChild);
+        break;
+    		case astMulOp:
+                 //ProcessMulOp(p,lev,lvalue,leftChild);
+        break;
+    		case astDivOp:
+                 //ProcessDivOp(p,lev,lvalue,leftChild);
+        break;
+    		case astModOp:
+                 //ProcessModOp(p,lev,lvalue,leftChild);
+        break;
+    		case astRealDeConst:
+            ProcessRealDeConst(p);
+        break;
+        case astString:
+            ProcessString(p);
+        break;
+    		case astDeConst:
+                 ProcessDeConst(p);
+        break;
+    		 case astTrue:
+                 ProcessTrue(p);
+             break;
+    		 case astIncreaseAfter:
+    			 ProcessIncreaseAfter(p,lev,leftChild);
+    		 break;
+    		 case astIncreaseBefore:
+    			 ProcessIncreaseBefore(p,lev,leftChild);
+    		 break;
+    		 case astDecreaseAfter:
+    			 ProcessDecreaseAfter(p,lev,leftChild);
+    		 break;
+    		 case astDecreaseBefore:
+    			 ProcessDecreaseBefore(p,lev,leftChild);
+    		 break;
+    		 case astActualsEmpty:
+                 //ProcessActualsEmpty(p,lev,lvalue,leftChild);
+             break;
+    		 case astFalse:
+                 ProcessFalse(p);
+             break;
+    		 case astActuals:
+                 ProcessActuals(p,lev,lvalue,leftChild);
+             break;
+    		 case astArgsSeq:
+                 ProcessArgsSeq(p,lev,lvalue,leftChild);
+             break;
+    		 case astArgsEmpty:
+                 //ProcessArgsEmpty(p,lev,lvalue,leftChild);
+             break;
          default:
             fprintf(text,"Unknown=%d\n",p->NodeType);
       }

@@ -6,7 +6,7 @@
 #define ELSE 262
 #define WHILE 263
 #define BREAK 264
-#define PRINT 265
+#define TRY 265
 #define READ 266
 #define PRINTLN 267
 #define TIMES 268
@@ -26,19 +26,21 @@
 #define ABSTRACT 282
 #define METH 283
 #define VAR 284
-#define DEC_CONST 285
-#define LITERAL 286
-#define REAL_DEC_CONST 287
-#define GE 288
-#define LE 289
-#define NE 290
-#define EQ 291
-#define ID 292
-#define INC 293
-#define DEC 294
-#define ADDASSIGN 295
-#define SUBASSIGN 296
-#define LOWER_THAN_ELSE 297
+#define STR 285
+#define DEC_CONST 286
+#define LITERAL 287
+#define REAL_DEC_CONST 288
+#define IDIV 289
+#define GE 290
+#define LE 291
+#define NE 292
+#define EQ 293
+#define ID 294
+#define INC 295
+#define DEC 296
+#define ADDASSIGN 297
+#define SUBASSIGN 298
+#define LOWER_THAN_ELSE 299
 #ifdef YYSTYPE
 #undef  YYSTYPE_IS_DECLARED
 #define YYSTYPE_IS_DECLARED 1

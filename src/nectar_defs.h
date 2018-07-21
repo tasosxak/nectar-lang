@@ -126,6 +126,8 @@
 #define astFuncDef 513
 #define astPointer 514
 #define astIdivOp    515
+#define astStr   516
+#define astString 517
 /* ----------------------------------------------------------- */
 /* ----- THE STRUCTURE FOR THE ABSTRACT SYNTAX TREE NODES ---- */
 /* ----------------------------------------------------------- */
@@ -157,6 +159,7 @@ typedef struct symbol_tag {
    int index;
    dcl* dcl_ptr;
    unsigned char pseudonym[NAME_MAX+1];
+   unsigned char stimi[NAME_MAX+1];
    struct symbol_tag *NextSymbol;
    struct symbol_tag *PrevSymbol;
    struct hash_tab *mht;
