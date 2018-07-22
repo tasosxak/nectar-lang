@@ -128,6 +128,9 @@
 #define astIdivOp    515
 #define astStr   516
 #define astString 517
+#define astFunctionCall 518
+#define astStaticMethodCall 519
+#define astSelf 520
 /* ----------------------------------------------------------- */
 /* ----- THE STRUCTURE FOR THE ABSTRACT SYNTAX TREE NODES ---- */
 /* ----------------------------------------------------------- */
@@ -148,6 +151,7 @@ typedef struct AstNode_tag {
 typedef struct symbol_tag {
    int accessor;
    unsigned char name[NAME_MAX+1];  /* -- Variable name .------------------ */
+   unsigned char nameclass[NAME_MAX+1];  /* -- Variable class's name .------------------ */
    int typos;                       /* -- INT REAL BOOL---------------------------- */
    int sclass;			     /* -- REGISTER, CONSTANT, MEMORY,STACK ----- */
    int timi;                        /* -- Value assigned . ---------------- */

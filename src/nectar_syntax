@@ -44,7 +44,8 @@ char CLASS_NAME[50];
 symbol *vs[30];
 symbol *whiles[30];  //For "break in while" checking
 symbol *returns[30]; // Check if return keyword exists for all cases in a method
-
+symbol *cur_class;
+int CUR_TYPE = 1000;
 symbol *p,*p1,*p2,*p3,*p4,*p5,*p6,*p7,*p8,*p9;
 
 AstNode *TreeRoot;
@@ -60,7 +61,7 @@ AstNode *TreeRoot;
     struct AstNode_tag *stnode;
 }
 
-%token <yint> FALSE TRUE INT RETURN IF ELSE WHILE BREAK TRY READ PRINTLN TIMES USE UNLESS NOT AND OR REAL PUTS BOOL FUNC RIGHTARROW CLASS PRIVATE PUBLIC ABSTRACT METH VAR STR
+%token <yint> FALSE TRUE INT RETURN IF ELSE WHILE BREAK TRY READ PRINTLN TIMES USE UNLESS NOT AND OR REAL PUTS BOOL FUNC RIGHTARROW CLASS PRIVATE PUBLIC ABSTRACT METH VAR STR SELF
 %token <ystr> DEC_CONST LITERAL REAL_DEC_CONST
 %token <ystr> '(' ')' '{' '}'
 %token <ystr> '*' '/' '+' '-' '=' ';' ',' IDIV
@@ -120,13 +121,13 @@ methodef
 class
        : modifier CLASS ID {
 
-         strcat(CLASS_NAME,$3);
+         strcpy(CLASS_NAME,$3);
          p1 = pop_vs();
 
          p2 = new_symbol(CLASS_NAME);
          p2->accessor = p1->accessor;
          p2->lvalue = 0;
-
+         p2->typos = CUR_TYPE++;
          //Check if main method have parameters
          if((strcmp(p2->name,"Object") == 0)){
 
@@ -141,11 +142,15 @@ class
   				exit(1);
   			 }
 
+         cur_class = p2;
 
        } bodyclass {
 
-         $$=MkNode(astClass,p2,$5,NULL,NULL,NULL);
 
+         $$=MkNode(astClass,cur_class,$5,NULL,NULL,NULL);
+
+         cur_class = NULL;
+         strcpy(CLASS_NAME,"");
        }
        ;
 
@@ -300,7 +305,8 @@ meth
     			 p2->lvalue = 0;
 
     			 set_class_types(p2,METHOD);
-    			 copy_attributes(p2,p1);
+    			 //copy_attributes(p2,p1);
+           p2->typos = p1->typos;
            p2->accessor = p3->accessor;
 
     			 //Check if main method have parameters
@@ -379,8 +385,8 @@ func
       			 p2->lvalue = 0;
 
       			 set_class_types(p2,METHOD);
-      			 copy_attributes(p2,p1);
-
+      			 //copy_attributes(p2,p1);
+            p2->typos = p1->typos;
 
       			 //Check if main method have parameters
       			 if((strcmp(p2->name,"main") == 0) && (numOfParams>0)){
@@ -536,7 +542,8 @@ type
 
           $$=MkNode(astPointer,NULL,NULL,NULL,NULL,NULL);
  	        p1 = new_symbol(""); //create symbol
-	       // set_class_types(p1,$1); //the type of symbol is integer
+          p = findsymb($1,1);
+	        p1->typos = p->typos;
 	        push_vs(p1);
 
         }
@@ -585,6 +592,11 @@ decl
 				sprintf(TEMP_NUM_VAR_ARR, "%d", NUM_BYTES_VAR );
 
 			break;
+      case STR:
+      break;
+      default:
+        strcpy(p2->nameclass , "Person"/*findsymb($4,1)->name*/);
+      break;
 		}
 
 		strcpy(p2->pseudonym, strcat(NUM_VAR_ARR, TEMP_NUM_VAR_ARR));
@@ -822,9 +834,16 @@ singlestmt
 	    | READ expr ',' location {
 
 
+
 		  $$=MkNode(astReadStmt,NULL,$2,$4,NULL,NULL);
 		  pop_vs();
-      pop_vs();
+      p = pop_vs();
+      if( p->typos != STR){
+
+          printf("Error: The type of print message in read statement must be string\n");
+          exit(1);
+      }
+
 		  push_vs(NULL);
 
 	    }
@@ -1728,9 +1747,9 @@ factor
 	      $$ = MkNode(astRealDeConst,p1,NULL,NULL,NULL,NULL);
          }
      | TRUE {
-	      p1 = new_symbol("");
-          p1->sclass=CONSTANT;
-		  p1->typos = BOOL;
+	       p1 = new_symbol("");
+         p1->sclass=CONSTANT;
+		      p1->typos = BOOL;
           p1->lvalue=0;
           p1->timi=1;
           p1->has_timi=CONST_VAL;
@@ -1747,6 +1766,17 @@ factor
 	      push_vs(p1);
           $$ = MkNode(astFalse,p1,NULL,NULL,NULL,NULL);
        }
+     | SELF {
+          p1 = new_symbol("");
+          p1->sclass=CONSTANT;
+          p = findsymb(CLASS_NAME,1);
+          p1->typos = p->typos;
+          p1->lvalue=0;
+          p1->timi=1;
+          p1->has_timi=CONST_VAL;
+          push_vs(p1);
+         $$ = MkNode(astSelf,p1,NULL,NULL,NULL,NULL);
+         }
      | method '('actuals')' {
 
 		  p2 = pop_vs();
@@ -1797,11 +1827,115 @@ factor
 		  }
 		  */
 
-        $$ = MkNode(astMethodCall,p,$1,$3,NULL,NULL);
+        $$ = MkNode(astFunctionCall,p,$1,$3,NULL,NULL);
  	      push_vs(p);
 
 		  //numOfArguments =0;
 	}
+
+      | ID '.' method '('actuals')' {
+
+       p2 = pop_vs();
+       p1 = pop_vs();
+
+
+       push_rt(new_symbol("*"));
+
+       strcpy(METHOD_NAME_TEMP,"");
+
+         while(strcmp(p1->name,"259") == 0 || strcmp(p1->name,"274") == 0 || strcmp(p1->name,"276") == 0 || strcmp(p1->name,"285") == 0 ){
+           push_rt(p1);
+       //  printf("%s\n",p1->name);
+       //  strcat(METHOD_NAME_TEMP,p1->name);
+           p1 = pop_vs();
+       }
+
+       push_vs(p1);
+
+       p1 = pop_rt();
+
+       while(strcmp(p1->name,"259") == 0 || strcmp(p1->name,"274") == 0 || strcmp(p1->name,"276") == 0 || strcmp(p1->name,"285") == 0 ){
+         strcat(METHOD_NAME_TEMP,p1->name);
+         p1 = pop_rt();
+     }
+
+       p1 = pop_vs();
+
+
+       strcpy(METHOD_NAME,p1->name);
+       strcat(METHOD_NAME,METHOD_NAME_TEMP);
+       p3 = new_symbol(METHOD_NAME);
+
+       strcpy(METHOD_NAME,"");
+       strcpy(METHOD_NAME_TEMP,"");
+
+       p6 = findsymb($1,1);
+       int i;
+       if(p6 != NULL){
+
+           i=mkkey(p3->name);
+           p7=p6->mht->table[i];
+
+           while(p7 && (strcmp(p7->name,p3->name) !=0)){
+                    p7=p7->NextSymbol;
+            }
+
+           if(p7 == NULL){
+             printf("Undeclared method!\n");
+             exit(1);
+           }
+
+           p = p6;
+
+            $$ = MkNode(astStaticMethodCall,p,$3,$5,NULL,NULL);
+
+       }
+       else {
+
+          p = findsymb($1,0);
+          if(p == NULL){
+                 printf("Error: '%s' undeclared variable",$1);
+                 exit(1);
+            }
+
+
+          p6 = findsymb(p->nameclass,1);
+          if(p6 != NULL){
+
+              i=mkkey(p3->name);
+              p7=p6->mht->table[i];
+
+              while(p7 && (strcmp(p7->name,p3->name) !=0)){
+                       p7=p7->NextSymbol;
+               }
+
+              if(p6 == NULL){
+                printf("Undeclared method!\n");
+                exit(1);
+              }
+
+              p = p6;
+              $$ = MkNode(astMethodCall,p,$3,$5,NULL,NULL);
+          }
+
+       }
+
+
+       //printf("%s\n",p->name);
+      // printf("%d\n",numOfArguments);
+
+      /* if(p->dcl_ptr->num_params != numOfArguments){
+
+         printf("Error: The number of arguments must match");
+         exit(1);
+       }
+       */
+
+
+         push_vs(p);
+
+       //numOfArguments =0;
+    }
 
      | '-' DEC_CONST {
           p1=new_symbol("");
@@ -2462,6 +2596,8 @@ int isSuperType(int type1, int type2){
 
 				}
 		break;
+    default:
+         return type1 == type2;
 
 
 	}

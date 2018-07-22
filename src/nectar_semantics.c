@@ -7,6 +7,7 @@
 
 
 char* filename;
+
 extern AstNode *TreeRoot;
 extern FILE* yyin;
 
@@ -18,13 +19,15 @@ int NUM_OF_LITERALS = 0;
 int LOC_ASSIGN_COUNTER =0;
 int R_TYPES_COUNTER = 0;
 int NUM_COMP = 0;
+int IS_METHOD = 0;
+
 
 int NUM_OF_INT_CONST = 0;
 int NUM_OF_REAL_CONST = 0;
 
 symbol* assigns[50];
 int r_types[50];
-
+char CUR_METHOD_NAME[31];
 FILE *data, *text;
 
 void kena(int n)
@@ -287,6 +290,9 @@ void ProcessField(AstNode *p,int lev){
     case BOOL:
       fprintf(text," I %s;\n",p->SymbolNode->name);
     break;
+    case STR:
+      fprintf(text," S %s;\n",p->SymbolNode->name);
+    break;
   }
 
   CodeGeneration(p->pAstNode[0],lev+1,0,0);
@@ -319,6 +325,9 @@ void ProcessAttrs(AstNode *p,int lev){
     break;
     case BOOL:
       fprintf(text," I %s;\n",p->SymbolNode->name);
+    break;
+    case STR:
+      fprintf(text," S %s;\n",p->SymbolNode->name);
     break;
   }
 
@@ -378,8 +387,9 @@ void ProcessMethSeq(AstNode*p, int lev){
 //Method
 void ProcessMethLast(AstNode*p, int lev){
 
-	BYTES_OF_PARAMETERS = 0;
-
+	BYTES_OF_PARAMETERS = 1;
+  strcpy(CUR_METHOD_NAME,p->SymbolNode->name);
+  IS_METHOD = 1;
   //Code Generation for parameters
 	CodeGeneration(p->pAstNode[1],lev+1,0,0);
 
@@ -400,7 +410,8 @@ void ProcessMethLast(AstNode*p, int lev){
 	CodeGeneration(p->pAstNode[2],lev+1,0,1);
 
 	fprintf(data,"\n\n");
-
+  strcpy(CUR_METHOD_NAME, "");
+  IS_METHOD = 0;
 }
 
 //Body
@@ -1307,6 +1318,32 @@ void ProcessAddAssign(AstNode*p, int lev,int leftChild){
                               fprintf(text,"dstore_ %d\n",lhs->index);
 
                            }
+									break;
+                  case STR:
+
+                      if(rhs->sclass == MEMORY){
+
+
+                            fprintf(text,"sload_ %d\n",lhs->index);
+                            fprintf(text,"sload_ %d\n",rhs->index);
+                            fprintf(text,"sadd\n");
+                            fprintf(text,"sstore_ %d\n",lhs->index);
+
+
+                         }
+                       else if(rhs->sclass == CONSTANT) {
+
+                          fprintf(text,"sload_ %d\n",lhs->index);
+                          fprintf(text,"sconst \"%s\"\n",rhs->stimi);
+                          fprintf(text,"sadd\n");
+                          fprintf(text,"sstore_ %d\n",lhs->index);
+
+                         }
+                       else if(rhs->sclass == STACK)
+                         {
+                            printf(text,"ERROR ADDASSIGN [RIGHT-STACK]\n");
+
+                         }
 									break;
 									case BOOL:
 										printf("Error: bad operand types for binary operator \n");
@@ -2343,6 +2380,19 @@ void ProcessEmbedAssign(AstNode*p, int lev,int leftChild){
 
 	   }
 
+
+}
+
+
+void ProcessMethodName(AstNode* p){
+
+	push_vs(p->SymbolNode);
+
+}
+
+void ProcessSelf(AstNode* p){
+
+	push_vs(p->SymbolNode);
 
 }
 
@@ -3828,7 +3878,7 @@ void ProcessAddExpr(AstNode *p, int lev, int lvalue, int leftChild){
 											 {
 
 
-                         fprintf(text,"sconst \"%d\"\n",rhs->timi);
+                         fprintf(text,"sconst \"%s\"\n",rhs->stimi);
                          fprintf(text,"sadd\n");
 
 
@@ -4282,8 +4332,8 @@ void ProcessFalse(AstNode* p){
 }
 
 
-//Method Call
-void ProcessMethodCall(AstNode *p, int lev, int lvalue, int leftChild){
+//Function Call
+void ProcessFunctionCall(AstNode *p, int lev, int lvalue, int leftChild){
 
 	symbol *sn;
 	sn = new_symbol("");
@@ -4303,6 +4353,38 @@ void ProcessMethodCall(AstNode *p, int lev, int lvalue, int leftChild){
 
 
 }
+
+//Static Method Call
+void ProcessStaticMethodCall(AstNode *p, int lev, int lvalue, int leftChild){
+
+	symbol *sn, *lhs;
+	sn = new_symbol("");
+	sn->sclass= STACK;
+
+ //Code Generation for static method name
+	CodeGeneration(p->pAstNode[0],lev+1,0,0);
+  lhs = pop_vs();
+
+	sn->typos = lhs->typos;
+
+	//Code Generation for actual parameters
+	CodeGeneration(p->pAstNode[1],lev+1,0,0);
+  if (strcmp(lhs->name,"new") == 0){
+
+    fprintf(text,"new %s\n", p->SymbolNode->name);
+  }
+
+
+
+	//Jump to method
+	fprintf(text,"invoke_virtual %s %s\n",p->SymbolNode->name, lhs->name);
+
+
+	 push_vs(sn);
+
+
+}
+
 
 //Break Statement
 void ProcessBreakStmt(){
@@ -4391,7 +4473,6 @@ void ProcessMulExpr(AstNode *p, int lev, int lvalue, int leftChild)
                                    {
 
                                      fprintf(text,"iload_ %d\n",lhs->index);
-                                     fprintf(text,"i2s\n");
                                      fprintf(text,"sconst \"%s\"\n",rhs->stimi);
                                      fprintf(text,"smul\n");
 
@@ -4399,7 +4480,6 @@ void ProcessMulExpr(AstNode *p, int lev, int lvalue, int leftChild)
 
 
                                      fprintf(text,"iload_ %d\n",lhs->index);
-                                     fprintf(text,"i2s\n");
                                      fprintf(text,"sload_ %d\n",rhs->index);
                                      fprintf(text,"smul\n");
 
@@ -4627,8 +4707,9 @@ void ProcessMulExpr(AstNode *p, int lev, int lvalue, int leftChild)
 
                        }
                        else if(rhs->sclass == CONSTANT){
-                        char* str[80];
+                        char* str;
                         if(lhs->timi !=0){
+                          str = (char *) malloc(sizeof(char)* lhs->timi * strlen(rhs->stimi));
                           strcpy(str,rhs->stimi);
                           int i;
                           for(i=0; i < lhs->timi - 1 ; i++)
@@ -5250,6 +5331,14 @@ void ProcessDecl(AstNode *p,int lev,int lvalue,int leftChild){
 				//Variable Declaration
 				fprintf(text,"iconst 0\n");
 		break;
+    case astString:
+				//Variable Declaration
+				fprintf(text,"sconst \" \"\n");
+		break;
+    case astPointer:
+				//Variable Declaration
+				fprintf(text,"rconst Null\n");
+		break;
 
 	}
 
@@ -5349,7 +5438,37 @@ void ProcessDeclAssign(AstNode *p,int lev,int lvalue,int leftChild){
 					}
 
 				break;
+        case STR:
 
+					switch(lhs){
+
+						case astInt:
+
+                printf("Error: bad operand types for binary operator \n");
+                exit(1);
+
+					  break;
+						case astReal:
+
+                printf("Error: bad operand types for binary operator \n");
+                exit(1);
+
+						break;
+						case astBool:
+
+						    printf("Error: bad operand types for binary operator \n");
+							  exit(1);
+
+					  break;
+            case astStr:
+
+						    fprintf(text,"sconst \"%s\"\n",rhs->stimi);
+
+					  break;
+
+					}
+
+				break;
 
 
 			}
@@ -5432,7 +5551,36 @@ void ProcessDeclAssign(AstNode *p,int lev,int lvalue,int leftChild){
 							}
 
 						break;
+            case STR:
 
+							switch(lhs){
+
+                case astInt:
+
+                    printf("Error: bad operand types for binary operator \n");
+                    exit(1);
+
+								break;
+
+								case astString:
+
+									 fprintf(text,"push dword [%s]\n",rhs->pseudonym);
+
+								break;
+								case astReal:
+
+                    printf("Error: bad operand types for binary operator \n");
+                    exit(1);
+
+								break;
+								case astBool:
+									printf("Error: bad operand types for binary operator \n");
+									exit(1);
+								break;
+
+							}
+
+						break;
 
 					}
 
@@ -5770,10 +5918,10 @@ void ProcessVarAssign(AstNode *p,int lev){
 //Parameters
 void ProcessParamSeq(AstNode *p,int lev,int lvalue,int leftChild){
 
+  BYTES_OF_PARAMETERS +=1;
+
 	//Code Generation for previous parameters
 	CodeGeneration(p->pAstNode[0],lev+1,0,0);
-
-	BYTES_OF_PARAMETERS +=1;
 
 	push_vs(p->SymbolNode);
 
@@ -5782,10 +5930,9 @@ void ProcessParamSeq(AstNode *p,int lev,int lvalue,int leftChild){
 //Formals
 void ProcessFormalsSeq(AstNode *p,int lev,int lvalue,int leftChild){
 
+  BYTES_OF_PARAMETERS +=1;
 	//Code Generation for previous parameters
 	CodeGeneration(p->pAstNode[0],lev+1,0,0);
-
-	BYTES_OF_PARAMETERS +=1;
 
 	push_vs(p->SymbolNode);
 
@@ -5816,6 +5963,9 @@ void  ProcessActuals(AstNode *p,int lev,int lvalue,int leftChild){
 			 case BOOL:
 				fprintf(text,"iload_ %d\n",rhs->index);
 			 break;
+       case STR:
+				fprintf(text,"sload_ %d\n",rhs->index);
+			 break;
 
 		}
 
@@ -5834,6 +5984,9 @@ void  ProcessActuals(AstNode *p,int lev,int lvalue,int leftChild){
 			 break;
 			 case BOOL:
 				fprintf(text,"iconst %d\n",rhs->timi);
+			 break;
+       case STR:
+				fprintf(text,"sconst \"%s\"\n",rhs->stimi);
 			 break;
 
 		}
@@ -5870,6 +6023,9 @@ void  ProcessArgsSeq(AstNode *p,int lev,int lvalue,int leftChild){
 			 break;
 			 case BOOL:
 				fprintf(text,"iload_ %d\n",rhs->index);
+			 break;
+       case STR:
+				fprintf(text,"sload_ %d\n",rhs->index);
 			 break;
 		}
 
@@ -5910,6 +6066,9 @@ void  ProcessArgsSeq(AstNode *p,int lev,int lvalue,int leftChild){
 			 case BOOL:
 				fprintf(text,"iconst %d\n",rhs->timi);
 			 break;
+       case STR:
+				fprintf(text,"sconst \"%s\"\n",rhs->stimi);
+			 break;
 
 		}
 
@@ -5948,6 +6107,10 @@ void ProcessReturnStmt(AstNode *p,int lev,int lvalue,int leftChild){
 			case BOOL:
 				//Push
 				fprintf(text,"iload_ %d\n",rhs->index);
+			break;
+      case STR:
+				//Push
+				fprintf(text,"sload_ %d\n",rhs->index);
 			break;
 
 		}
@@ -5999,7 +6162,16 @@ void ProcessReturnStmt(AstNode *p,int lev,int lvalue,int leftChild){
 				//fprintf(text,"fild dword [INT_%d]\n",NUM_OF_INT_CONST++);
 
 			break;
+      case STR:
 
+				//Push
+				fprintf(text,"sconst \"%d\"\n",rhs->stimi);
+				//fprintf(text,"fild dword [INT_%d]\n",NUM_OF_INT_CONST++);
+
+			break;
+      default:
+        fprintf(text,"rload 1\n");
+      break;
 		}
 
 
@@ -6321,7 +6493,20 @@ void ProcessReadStmt(AstNode *p,int lev,int lvalue,int leftChild){
   CodeGeneration(p->pAstNode[0],lev+1,0,0);
 
 	lhs = pop_vs();
-  fprintf(text,"sconst \"%s\"\n",lhs->stimi);
+
+  switch(lhs->sclass){
+
+    case MEMORY:
+      fprintf(text,"sload_ %d\n",lhs->index);
+    break;
+    case STACK:
+
+    break;
+    case CONSTANT:
+      fprintf(text,"sconst \"%s\"\n",lhs->stimi);
+    break;
+  }
+
   NUM_OF_LITERALS++;
 
   fprintf(text,"print\n");
@@ -6341,6 +6526,10 @@ void ProcessReadStmt(AstNode *p,int lev,int lvalue,int leftChild){
 			case REAL:
           fprintf(text,"s2d\n");
           fprintf(text,"dstore_ %d\n",rhs->index);
+
+			break;
+      case STR:
+          fprintf(text,"sstore_ %d\n",rhs->index);
 
 			break;
 
@@ -6383,6 +6572,9 @@ void CodeGeneration(AstNode *p, int lev, int lvalue, int leftChild)
          break;
          case astClass:
             ProcessClass(p,lev);
+         break;
+         case astSelf:
+            ProcessSelf(p);
          break;
          case astPrivateClassMod:
           //  ProcessPrivateClassMod(p,lev);
@@ -6517,7 +6709,7 @@ void CodeGeneration(AstNode *p, int lev, int lvalue, int leftChild)
              ProcessReturnStmt(p,lev,lvalue,leftChild);
          break;
          case astMethodName:
-             //ProcessMethodName(p,lev,lvalue,leftChild);
+             ProcessMethodName(p);
          break;
          case astWhileStmt:
              ProcessWhileStmt(p,lev,lvalue,leftChild);
@@ -6542,6 +6734,9 @@ void CodeGeneration(AstNode *p, int lev, int lvalue, int leftChild)
     		 break;
     		 case astPrintStmt:
     			 ProcessPrintStmt(p,lev,lvalue,leftChild);
+    		 break;
+         case astPointer:
+    			//
     		 break;
     		 case astPrintLnStmt:
     			 ProcessPrintLnStmt(p,lev,lvalue,leftChild);
@@ -6600,8 +6795,14 @@ void CodeGeneration(AstNode *p, int lev, int lvalue, int leftChild)
         case astNullStmt:
            //ProcessNullStmt(p,lev,lvalue,leftChild);
         break;
+        case astFunctionCall:
+           ProcessFunctionCall(p,lev,lvalue,leftChild);
+        break;
         case astMethodCall:
-           ProcessMethodCall(p,lev,lvalue,leftChild);
+           //ProcessMethodCall(p,lev,lvalue,leftChild);
+        break;
+        case astStaticMethodCall:
+           ProcessStaticMethodCall(p,lev,lvalue,leftChild);
         break;
         case astGeOp:
            //ProcessGeOp(p,lev,lvalue,leftChild);
@@ -6708,6 +6909,8 @@ void BeforeCodeGeneration(){
 	fprintf(text,"    section .text\n\n");
 
 */
+ fprintf(data,"public class %s.Object extends NULL:\n",filename);
+ fprintf(data,"endclass\n",filename);
 
 }
 

@@ -9,18 +9,18 @@ int lengthOfIncludeStatement;
 
 void processFile(char *inputFileName,char *srcDirectory){
 
-	
+
     FILE* file = fopen(inputFileName, "r"); /* should check the result */
-	
-	
+
+
 	if(file == NULL){
-		
+
 		char path[100];
 		strcpy(path,srcDirectory);
 		strcat(path,inputFileName);
 		strcat(path,".nr");
-		file = fopen(path, "r"); 
-		
+		file = fopen(path, "r");
+
 		if(file == NULL){
 			printf("Error: The library '%s' doesn't exist\n",inputFileName);
 			exit(1);
@@ -39,12 +39,12 @@ void processFile(char *inputFileName,char *srcDirectory){
         }
         strncpy(firstNLetters, line+countSpaces, lengthOfIncludeStatement);
         firstNLetters[lengthOfIncludeStatement] = 0;
-		
+
         if (strcmp(firstNLetters, includeStatement) == 0){
             // found include
 
             strcpy(includedFileName, line + countSpaces + lengthOfIncludeStatement ); // get the name of the file to be included
-			
+
             if ((pos=strchr(includedFileName, '\n')) != NULL)
                 *pos = '\0'; // replace \n with \0
 
@@ -68,10 +68,11 @@ int main(int argc, char *argv[])
 
 
     char* srcFileName = argv[1];
-    char* srcDirectory= argv[2];	
+    char* srcDirectory= argv[2];
+		char filename[50];
+		sprintf(filename,"%s.nrf",argv[3]);
 
-
-	finalSrcFile = fopen("final.nrf", "w+");
+	finalSrcFile = fopen(filename, "w+");
     processFile(srcFileName,srcDirectory);
     fclose(finalSrcFile);
 
