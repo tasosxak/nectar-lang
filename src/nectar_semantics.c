@@ -20,7 +20,7 @@ int LOC_ASSIGN_COUNTER =0;
 int R_TYPES_COUNTER = 0;
 int NUM_COMP = 0;
 int IS_METHOD = 0;
-
+char PARAMETERS_CALL[31];
 
 int NUM_OF_INT_CONST = 0;
 int NUM_OF_REAL_CONST = 0;
@@ -29,6 +29,19 @@ symbol* assigns[50];
 int r_types[50];
 char CUR_METHOD_NAME[31];
 FILE *data, *text;
+
+
+
+char *nitoa(int num, char *str)
+{
+        if(str == NULL)
+        {
+                return NULL;
+        }
+        sprintf(str, "%d", num);
+        return str;
+}
+
 
 void kena(int n)
 {  int i;
@@ -446,6 +459,24 @@ void ProcessLib(AstNode *p, int lev, int leftChild){
 }
 */
 
+
+void ProcessArrayIndex(AstNode *p, int lev){
+
+  symbol *lhs;
+  symbol *rhs;
+  symbol *sn;
+
+  CodeGeneration(p->pAstNode[0],lev+1,1,0);
+  lhs = pop_vs();
+  CodeGeneration(p->pAstNode[1],lev+1,0,0);
+  rhs = pop_vs();
+
+  sn = new_symbol("");
+  sn->typos = lhs->typos;
+  sn->sclass = MEMORY;
+
+  push_vs(sn);
+}
 
 // Expr Statement
 void ProcessExprStmt(AstNode *p, int lev, int lvalue,int leftChild){
@@ -4354,6 +4385,35 @@ void ProcessFunctionCall(AstNode *p, int lev, int lvalue, int leftChild){
 
 }
 
+
+void ProcessMethodCall(AstNode *p, int lev, int lvalue, int leftChild){
+
+  symbol *sn, *lhs;
+  sn = new_symbol("");
+  sn->sclass= STACK;
+
+  //Code Generation for static method name
+  CodeGeneration(p->pAstNode[0],lev+1,0,0);
+  lhs = pop_vs();
+
+  sn->typos = lhs->typos;
+
+  //Code Generation for actual parameters
+  CodeGeneration(p->pAstNode[1],lev+1,0,0);
+  fprintf(text,"rload_ %d\n",p->SymbolNode->index);
+
+  char snum[6];
+  nitoa(p->SymbolNode->typos,snum);
+
+  //Jump to method
+  fprintf(text,"invoke_virtual %s %s%s%s\n",p->SymbolNode->nameclass, lhs->name,snum,PARAMETERS_CALL);
+
+  strcpy(PARAMETERS_CALL,"");
+
+  push_vs(sn);
+
+}
+
 //Static Method Call
 void ProcessStaticMethodCall(AstNode *p, int lev, int lvalue, int leftChild){
 
@@ -4374,11 +4434,13 @@ void ProcessStaticMethodCall(AstNode *p, int lev, int lvalue, int leftChild){
     fprintf(text,"new %s\n", p->SymbolNode->name);
   }
 
-
+  char snum[6];
+  nitoa(p->SymbolNode->typos,snum);
 
 	//Jump to method
-	fprintf(text,"invoke_virtual %s %s\n",p->SymbolNode->name, lhs->name);
+	fprintf(text,"invoke_virtual %s %s%s%s\n",p->SymbolNode->name, lhs->name,snum,PARAMETERS_CALL);
 
+  strcpy(PARAMETERS_CALL,"");
 
 	 push_vs(sn);
 
@@ -5997,6 +6059,10 @@ void  ProcessActuals(AstNode *p,int lev,int lvalue,int leftChild){
 	//Code Generation for previous argument expressions
 	CodeGeneration(p->pAstNode[0],lev+1,0,0);
 
+  char snum[6];
+  nitoa(rhs->typos,snum);
+  strcat(PARAMETERS_CALL,snum);
+
 }
 
 //Args
@@ -6078,6 +6144,11 @@ void  ProcessArgsSeq(AstNode *p,int lev,int lvalue,int leftChild){
 
 	//Code Generation for previous argument expressions
 	CodeGeneration(p->pAstNode[0],lev+1,0,0);
+
+  char snum[6];
+  nitoa(rhs->typos,snum);
+  strcpy(PARAMETERS_CALL,snum);
+
 }
 
 
@@ -6398,7 +6469,6 @@ void ProcessSingleExprInline(AstNode *p,int lev,int lvalue,int leftChild){
 
          }
 
-         fprintf(text,"nl\n");
 
  }
   else if(rhs->sclass == STACK){
@@ -6581,6 +6651,9 @@ void CodeGeneration(AstNode *p, int lev, int lvalue, int leftChild)
          break;
          case astPublicClassMod:
           //  ProcessPublicClassMod(p,lev);
+         break;
+         case astArrayIndex:
+              ProcessArrayIndex(p,lev);
          break;
          case astAbstractClassMod:
           //  ProcessAbstractClassMod(p,lev);
@@ -6799,7 +6872,7 @@ void CodeGeneration(AstNode *p, int lev, int lvalue, int leftChild)
            ProcessFunctionCall(p,lev,lvalue,leftChild);
         break;
         case astMethodCall:
-           //ProcessMethodCall(p,lev,lvalue,leftChild);
+           ProcessMethodCall(p,lev,lvalue,leftChild);
         break;
         case astStaticMethodCall:
            ProcessStaticMethodCall(p,lev,lvalue,leftChild);

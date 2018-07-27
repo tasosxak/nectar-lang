@@ -133,6 +133,18 @@ int id_or_keyword(char *name);
                                return('}');
                             }
 
+"["                         {
+                             //printf("%s\n",yytext);
+                             strcpy(yylval.ystr,yytext);
+                             return('[');
+                          }
+
+"]"                         {
+                             //printf("%s\n",yytext);
+                             strcpy(yylval.ystr,yytext);
+                             return(']');
+                          }
+
 
 "("                         {
                                //printf("%s\n",yytext);

@@ -1,6 +1,6 @@
 #define SYM_TABLE_SIZE 41
 #define NAME_MAX  32
-#define MAX_SYM_TABLES 10
+#define MAX_SYM_TABLES 20
 
 #define METHOD  		2
 #define CONSTANT        3
@@ -131,6 +131,7 @@
 #define astFunctionCall 518
 #define astStaticMethodCall 519
 #define astSelf 520
+#define astArrayIndex 521
 /* ----------------------------------------------------------- */
 /* ----- THE STRUCTURE FOR THE ABSTRACT SYNTAX TREE NODES ---- */
 /* ----------------------------------------------------------- */
@@ -205,6 +206,7 @@ void add_symbols_to_table(symbol *symbp, int gl);
 symbol *findsymb(char *onoma, int gl);
 void addsymb(symbol *symbp, int gl);
 int mkkey(char *s);
+int isNumeric (const char * s);
 void copy_attributes(symbol *dst, symbol *src);
 void Init_while_stack();
 int set_class_types(symbol *symbp, int class_tipos);
