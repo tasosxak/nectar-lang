@@ -1580,7 +1580,7 @@ break;
 case 12:
 #line 163 "nectar_syntax"
 	{
-           printf("modifier\n");
+           
            yyval.stnode=MkNode(astPublicClassMod,NULL,NULL,NULL,NULL,NULL);
            p1 = new_symbol(""); /*create symbol*/
            p1->accessor = PUBLIC_ACC;
@@ -3619,7 +3619,7 @@ break;
 case 133:
 #line 1976 "nectar_syntax"
 	{
-     
+
           pop_vs();
           p1=pop_vs();
           p = new_symbol("");

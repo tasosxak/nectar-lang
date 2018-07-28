@@ -161,7 +161,7 @@ modifier
  	         push_vs(p1);
           }
        	 | PUBLIC {
-           printf("modifier\n");
+           
            $$=MkNode(astPublicClassMod,NULL,NULL,NULL,NULL,NULL);
            p1 = new_symbol(""); //create symbol
            p1->accessor = PUBLIC_ACC;
@@ -1974,7 +1974,7 @@ factor
 
      	  }
      | location '[' expr ']' {
-     
+
           pop_vs();
           p1=pop_vs();
           p = new_symbol("");
