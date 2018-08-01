@@ -60,7 +60,7 @@ AstNode *TreeRoot;
     struct AstNode_tag *stnode;
 }
 
-%token <yint> FALSE TRUE INT RETURN IF ELSE WHILE BREAK TRY READ PRINTLN TIMES USE UNLESS NOT AND OR REAL PUTS BOOL FUNC RIGHTARROW CLASS PRIVATE PUBLIC ABSTRACT METH VAR STR SELF
+%token <yint> FALSE TRUE INT RETURN IF ELSE WHILE BREAK TRY READ PRINTLN TIMES USE UNLESS NOT AND OR REAL PUTS BOOL FUNC RIGHTARROW CLASS PRIVATE PUBLIC ABSTRACT METH VAR STR SELF IN FOR
 %token <ystr> DEC_CONST LITERAL REAL_DEC_CONST
 %token <ystr> '(' ')' '{' '}'
 %token <ystr> '*' '/' '+' '-' '=' ';' ',' IDIV
@@ -86,13 +86,13 @@ AstNode *TreeRoot;
 program
        :  definitions {
 
-		     p1 = findsymb("main",1);//Every program in coral language must have a main function
-		     if(!p1) {
-					printf("Error : 'main' function not found");
-					exit(1);
-				}
+      		     p1 = findsymb("main",1);//Every program in coral language must has a main function
+      		     if(!p1) {
+      					printf("Error : 'main' not found in program");
+      					exit(1);
+      				}
 
-			 TreeRoot=MkNode(astProgram,NULL,$1,NULL,NULL,NULL);
+			        TreeRoot=MkNode(astProgram,NULL,$1,NULL,NULL,NULL);
 
 
         }
@@ -155,23 +155,25 @@ class
 
 modifier
        	 : /*PRIVATE*/ {
-           $$=MkNode(astPrivateClassMod,NULL,NULL,NULL,NULL,NULL);
-           p1 = new_symbol(""); //create symbol
- 	         p1->accessor = PRIVATE_ACC;
- 	         push_vs(p1);
+
+             $$=MkNode(astPrivateClassMod,NULL,NULL,NULL,NULL,NULL);
+             p1 = new_symbol(""); //create symbol
+   	         p1->accessor = PRIVATE_ACC;
+   	         push_vs(p1);
           }
        	 | PUBLIC {
-           
-           $$=MkNode(astPublicClassMod,NULL,NULL,NULL,NULL,NULL);
-           p1 = new_symbol(""); //create symbol
-           p1->accessor = PUBLIC_ACC;
-           push_vs(p1);
+
+             $$=MkNode(astPublicClassMod,NULL,NULL,NULL,NULL,NULL);
+             p1 = new_symbol(""); //create symbol
+             p1->accessor = PUBLIC_ACC;
+             push_vs(p1);
          }
        	 | ABSTRACT{
-           $$=MkNode(astAbstractClassMod,NULL,NULL,NULL,NULL,NULL);
-           p1 = new_symbol(""); //create symbol
- 	         p1->accessor = ABSTRACT_ACC;
- 	         push_vs(p1);
+
+             $$=MkNode(astAbstractClassMod,NULL,NULL,NULL,NULL,NULL);
+             p1 = new_symbol(""); //create symbol
+   	         p1->accessor = ABSTRACT_ACC;
+   	         push_vs(p1);
          }
        	 ;
 
@@ -183,20 +185,20 @@ fields
 field
       	 : '@' ID ':' type attrs {
 
-           p1 = pop_vs();
-           p3 = new_symbol($2);
-           p3->sclass = MEMORY;
-           p3->typos = p1->typos;
-           p3->accessor = PRIVATE_ACC;
-           p3->lvalue = 0;
-           add_symbols_to_table(p3,1);
+               p1 = pop_vs();
+               p3 = new_symbol($2);
+               p3->sclass = MEMORY;
+               p3->typos = p1->typos;
+               p3->accessor = PRIVATE_ACC;
+               p3->lvalue = 0;
+               add_symbols_to_table(p3,1);
 
-          if(topOfSt == MAX_SYM_TABLES) {
-            printf("Out of memory :( , the number of attributes must be less than %d",MAX_SYM_TABLES); //if the number of methods is greater than MAX_SYM_TABLES constant
-            exit(1);
-          }
+               if(topOfSt == MAX_SYM_TABLES) {
+                printf("Out of memory :( , the number of attributes must be less than %d",MAX_SYM_TABLES); //if the number of methods is greater than MAX_SYM_TABLES constant
+                exit(1);
+               }
 
-          $$=MkNode(astField,p3,$5,NULL,NULL,NULL);
+              $$=MkNode(astField,p3,$5,NULL,NULL,NULL);
 
 
          }
@@ -228,7 +230,6 @@ field
 attrs
       	: ',' ID attrs {
 
-
            p1 = pop_vs();
            //p2 = pop_vs();
 
@@ -240,15 +241,13 @@ attrs
 
            add_symbols_to_table(p3,1);
 
-          if(topOfSt == MAX_SYM_TABLES) {
-            printf("Out of memory :( , the number of attributes must be less than %d",MAX_SYM_TABLES); //if the number of methods is greater than MAX_SYM_TABLES constant
-            exit(1);
-          }
-
+           if(topOfSt == MAX_SYM_TABLES) {
+              printf("Out of memory :( , the number of attributes must be less than %d",MAX_SYM_TABLES); //if the number of methods is greater than MAX_SYM_TABLES constant
+              exit(1);
+           }
 
           $$=MkNode(astAttrs,NULL,$3,NULL,NULL,NULL);
 
-          //push_vs(p2);
           push_vs(p1);
 
         }
@@ -274,7 +273,6 @@ attrs
 
           $$=MkNode(astAttrsAssign,p4,$4,$5,NULL,NULL);
 
-          //push_vs(p3);
           push_vs(p2);
 
         }
@@ -287,8 +285,6 @@ bodyclass
        	 : '{' fields meth_list '}' {$$=MkNode(astBodyClass,NULL,$2,$3,NULL,NULL);
        	 }
        	 ;
-
-
 
 meth
       :  modifier ID {
@@ -544,7 +540,7 @@ type
     | ID {
 
           $$=MkNode(astPointer,NULL,NULL,NULL,NULL,NULL);
- 	        p1 = new_symbol(""); //create symbol
+ 	        p1 = new_symbol($1); //create symbol
           p = findsymb($1,1);
 	        p1->typos = p->typos;
 	        push_vs(p1);
@@ -573,234 +569,239 @@ decl_list
 decl
       : VAR ID ':' type {
 
-		p1 = pop_vs();
-		p2 = new_symbol($2);
-	  copy_attributes(p2, p1);
+        		p1 = pop_vs();
+        		p2 = new_symbol($2);
+        	  copy_attributes(p2, p1);
 
-		/*Create a pseudonym for this variable, which is important for code generation*/
-		strcpy(NUM_VAR_ARR, "ebp - ");
-    NUM_BYTES_VAR-=1;
-    p2->index = NUM_BYTES_VAR;
-		switch(p1->typos){
-			case INT:
+            /*Create a pseudonym for this variable, which is important for code generation*/
+        		strcpy(NUM_VAR_ARR, "ebp - ");
+            NUM_BYTES_VAR-=1;
+            p2->index = NUM_BYTES_VAR;
 
-				sprintf(TEMP_NUM_VAR_ARR, "%d", NUM_BYTES_VAR );
+            switch(p1->typos){
 
-			break;
-			case REAL:
+        			case INT:
 
-				sprintf(TEMP_NUM_VAR_ARR, "%d", NUM_BYTES_VAR);
-			break;
-			case BOOL:
-				sprintf(TEMP_NUM_VAR_ARR, "%d", NUM_BYTES_VAR );
+        				sprintf(TEMP_NUM_VAR_ARR, "%d", NUM_BYTES_VAR );
 
-			break;
-      case STR:
-      break;
-      default:
-        strcpy(p2->nameclass , "Person"/*findsymb($4,1)->name*/);
-      break;
-		}
+        			break;
+        			case REAL:
+        				sprintf(TEMP_NUM_VAR_ARR, "%d", NUM_BYTES_VAR);
 
-		strcpy(p2->pseudonym, strcat(NUM_VAR_ARR, TEMP_NUM_VAR_ARR));
+        			break;
+        			case BOOL:
 
+        				sprintf(TEMP_NUM_VAR_ARR, "%d", NUM_BYTES_VAR );
 
-		p2->sclass = MEMORY;
-		add_symbols_to_table(p2,0);
+        			break;
+              case STR:
 
-		push_vs(p1);
+              break;
+              default:
+
+                p =  findsymb(p1->name,1);
+                if(p == NULL){
+                    printf("Error: Undeclared class '%s\n",p1->name);
+                    exit(0);
+                }
+                strcpy(p2->nameclass ,p->name);
+
+              break;
+        		}
+
+            strcpy(p2->pseudonym, strcat(NUM_VAR_ARR, TEMP_NUM_VAR_ARR));
+
+        		p2->sclass = MEMORY;
+        		add_symbols_to_table(p2,0);
+
+        		push_vs(p1);
 
 
   } vars separator {
 
-		pop_vs();
-		$$=MkNode(astDecl,NULL,$4,$6,NULL,NULL);
+    		pop_vs();
+    		$$=MkNode(astDecl,NULL,$4,$6,NULL,NULL);
 
-        }
-
+    }
 	  | VAR  ID ':' type '[' DEC_CONST ']' {
 
-		p1 = pop_vs();
-		p2 = new_symbol($2);
-	    copy_attributes(p2, p1);
+    		p1 = pop_vs();
+        p2 = pop_vs();
+    		p3 = new_symbol($2);
+    	  copy_attributes(p3, p2);
 
-		add_array_dcl(p2,atoi($6));
+		    add_array_dcl(p3,atoi($6));
+        /*Create a pseudonym for this variable, which is important for code generation*/
+    		strcpy(NUM_VAR_ARR, "ebp - ");
 
-		/*Create a pseudonym for this variable, which is important for code generation*/
-		strcpy(NUM_VAR_ARR, "ebp - ");
+    		switch(p1->typos){
+    			case INT:
 
-		switch(p1->typos){
-			case INT:
-			    NUM_BYTES_VAR+=4*(atoi($6));
-				sprintf(TEMP_NUM_VAR_ARR, "%d", NUM_BYTES_VAR );
+    			    NUM_BYTES_VAR+=4*(atoi($6));
+    				  sprintf(TEMP_NUM_VAR_ARR, "%d", NUM_BYTES_VAR );
 
-			break;
-			case REAL:
-				NUM_BYTES_VAR+=8*(atoi($6));
-				sprintf(TEMP_NUM_VAR_ARR, "%d", NUM_BYTES_VAR);
+    			break;
+    			case REAL:
 
-			break;
-			case BOOL:
-			    NUM_BYTES_VAR+=4*(atoi($6));
-				sprintf(TEMP_NUM_VAR_ARR, "%d", NUM_BYTES_VAR );
+    				  NUM_BYTES_VAR+=8*(atoi($6));
+    				  sprintf(TEMP_NUM_VAR_ARR, "%d", NUM_BYTES_VAR);
 
-			break;
-		}
+    			break;
+    			case BOOL:
 
-		strcpy(p2->pseudonym, strcat(NUM_VAR_ARR, TEMP_NUM_VAR_ARR));
+    			    NUM_BYTES_VAR+=4*(atoi($6));
+    				  sprintf(TEMP_NUM_VAR_ARR, "%d", NUM_BYTES_VAR );
 
+    			break;
+    		}
 
-		p2->sclass = MEMORY;
-		add_symbols_to_table(p2,0);
+		    strcpy(p2->pseudonym, strcat(NUM_VAR_ARR, TEMP_NUM_VAR_ARR));
 
-		push_vs(p1);
+		    p3->sclass = MEMORY;
+		    add_symbols_to_table(p3,0);
+
+		    push_vs(p2);
 
 
 		} vars separator {
 
-		pop_vs();
-		$$=MkNode(astDecl,NULL,$4,$9,NULL,NULL);
+		    pop_vs();
+		    $$=MkNode(astDecl,NULL,$4,$9,NULL,NULL);
 
-        }
-      | VAR ID ':' type '=' expr {
+    }
+    | VAR ID ':' type '=' expr {
 
-		   p3 = pop_vs();
-	     p1 = pop_vs();
-	     p2 = new_symbol($2);
-	     copy_attributes(p2, p1);
+    		   p3 = pop_vs();
+    	     p1 = pop_vs();
+    	     p2 = new_symbol($2);
+    	     copy_attributes(p2, p1);
 
+           strcpy(NUM_VAR_ARR, "ebp - ");
+           NUM_BYTES_VAR -=1;
+           p2->index = NUM_BYTES_VAR;
 
-		 strcpy(NUM_VAR_ARR, "ebp - ");
-     NUM_BYTES_VAR -=1;
-     p2->index = NUM_BYTES_VAR;
-		switch(p1->typos){
-			case INT:
-				sprintf(TEMP_NUM_VAR_ARR, "%d", NUM_BYTES_VAR);
+           switch(p1->typos){
 
-			break;
-			case REAL:
-				sprintf(TEMP_NUM_VAR_ARR, "%d", NUM_BYTES_VAR);
+               case INT:
 
-			break;
-			case BOOL:
-				sprintf(TEMP_NUM_VAR_ARR, "%d", NUM_BYTES_VAR);
+                 sprintf(TEMP_NUM_VAR_ARR, "%d", NUM_BYTES_VAR);
 
-			break;
-		}
-		 strcpy(p2->pseudonym, strcat(NUM_VAR_ARR, TEMP_NUM_VAR_ARR));
+               break;
+               case REAL:
 
+                 sprintf(TEMP_NUM_VAR_ARR, "%d", NUM_BYTES_VAR);
 
-		 if(!isSuperType(p1->typos, p3->typos)) {
-			 printf("Warning: The type of '%s' is not '%d'\n",p1->name,p3->typos);
+               break;
+               case BOOL:
 
+                 sprintf(TEMP_NUM_VAR_ARR, "%d", NUM_BYTES_VAR);
 
-		 }
+               break;
+          }
 
-	     copy_value(p2,p3);
-		 p2->sclass = MEMORY;
-	     add_symbols_to_table(p2,0);
+          strcpy(p2->pseudonym, strcat(NUM_VAR_ARR, TEMP_NUM_VAR_ARR));
 
-		 push_vs(p1);
+          if(!isSuperType(p1->typos, p3->typos)) {
+    			     printf("Warning: The type of '%s' is not '%d'\n",p1->name,p3->typos);
+    		   }
 
-	     } vars separator {
+    	     copy_value(p2,p3);
+    		   p2->sclass = MEMORY;
+    	     add_symbols_to_table(p2,0);
 
-	     pop_vs();
-	     $$=MkNode(astDeclAssign,NULL,$4,$6,$8,NULL);
-	     }
+    		   push_vs(p1);
 
-      ;
+	  } vars separator {
+
+    	     pop_vs();
+    	     $$=MkNode(astDeclAssign,NULL,$4,$6,$8,NULL);
+	  }
+    ;
 
 vars
       :',' ID {
-		 p1 = pop_vs();
-		 p2 = new_symbol($2);
-	     copy_attributes(p2, p1);
+
+        p1 = pop_vs();
+		    p2 = new_symbol($2);
+	      copy_attributes(p2, p1);
+
+        strcpy(NUM_VAR_ARR, "ebp - ");
+        NUM_BYTES_VAR-=1;
+        p2->index = NUM_BYTES_VAR;
+
+		    switch(p1->typos){
+
+      			case INT:
+      				sprintf(TEMP_NUM_VAR_ARR, "%d", NUM_BYTES_VAR );
+
+      			break;
+      			case REAL:
+      				sprintf(TEMP_NUM_VAR_ARR, "%d", NUM_BYTES_VAR);
+
+      			break;
+      			case BOOL:
+      				sprintf(TEMP_NUM_VAR_ARR, "%d", NUM_BYTES_VAR );
+
+      			break;
+  		  }
+
+        strcpy(p2->pseudonym, strcat(NUM_VAR_ARR, TEMP_NUM_VAR_ARR));
 
 
-		 strcpy(NUM_VAR_ARR, "ebp - ");
-     NUM_BYTES_VAR-=1;
-     p2->index = NUM_BYTES_VAR;
-		 switch(p1->typos){
-			case INT:
-				sprintf(TEMP_NUM_VAR_ARR, "%d", NUM_BYTES_VAR );
+		    add_symbols_to_table(p2,0);
 
-			break;
-			case REAL:
-				sprintf(TEMP_NUM_VAR_ARR, "%d", NUM_BYTES_VAR);
+		    p2->sclass = MEMORY;
+		    push_vs(p1);
 
-			break;
-			case BOOL:
-				sprintf(TEMP_NUM_VAR_ARR, "%d", NUM_BYTES_VAR );
+	   } vars {
 
-			break;
-		}
+    		p = pop_vs();
+    		$$=MkNode(astVarsSeq,p,$4,NULL,NULL,NULL);
+    		push_vs(p);
 
-		 strcpy(p2->pseudonym, strcat(NUM_VAR_ARR, TEMP_NUM_VAR_ARR));
-
-
-		 add_symbols_to_table(p2,0);
-
-		 p2->sclass = MEMORY;
-		 push_vs(p1);
-
-	     } vars {
-
-		p = pop_vs();
-		$$=MkNode(astVarsSeq,p,$4,NULL,NULL,NULL);
-		push_vs(p);
-
-        }
-      |',' ID '=' expr {
+    }
+    |',' ID '=' expr {
 
 		   p3 = pop_vs();
 	     p1 = pop_vs();
 	     p2 = new_symbol($2);
 	     copy_attributes(p2, p1);
+       strcpy(NUM_VAR_ARR, "ebp - ");
+       NUM_BYTES_VAR-=1;
+       p2->index = NUM_BYTES_VAR;
 
+		   switch(p1->typos){
+      			case INT:
+      				sprintf(TEMP_NUM_VAR_ARR, "%d", NUM_BYTES_VAR );
+      			break;
+      			case REAL:
+      				sprintf(TEMP_NUM_VAR_ARR, "%d", NUM_BYTES_VAR);
+      			break;
+      			case BOOL:
+      				sprintf(TEMP_NUM_VAR_ARR, "%d", NUM_BYTES_VAR );
+			      break;
+		  }
 
-		strcpy(NUM_VAR_ARR, "ebp - ");
-    NUM_BYTES_VAR-=1;
-    p2->index = NUM_BYTES_VAR;
-		switch(p1->typos){
-			case INT:
-
-				sprintf(TEMP_NUM_VAR_ARR, "%d", NUM_BYTES_VAR );
-
-			break;
-			case REAL:
-				sprintf(TEMP_NUM_VAR_ARR, "%d", NUM_BYTES_VAR);
-
-			break;
-			case BOOL:
-				sprintf(TEMP_NUM_VAR_ARR, "%d", NUM_BYTES_VAR );
-
-			break;
-		}
-		 strcpy(p2->pseudonym, strcat(NUM_VAR_ARR, TEMP_NUM_VAR_ARR));
-
-
-		 if(!isSuperType(p1->typos, p3->typos)) {
-			 printf("Warning: The type of '%s' is not '%d'\n",p1->name,p3->typos);
-
-
-		 }
+      strcpy(p2->pseudonym, strcat(NUM_VAR_ARR, TEMP_NUM_VAR_ARR));
+  		if(!isSuperType(p1->typos, p3->typos)) {
+  			 printf("Warning: The type of '%s' is not '%d'\n",p1->name,p3->typos);
+  		 }
 
 	     copy_value(p2,p3);
 	     add_symbols_to_table(p2,0);
 
-		 p2->sclass = MEMORY;
+		   p2->sclass = MEMORY;
 	     push_vs(p1);
-
 
 	  } vars {
 
          p=pop_vs();
-	     $$=MkNode(astVarAssign,p,$4,$6,NULL,NULL);
-	     push_vs(p);
-      }
-      | /* EMPTY */ { $$=MkNode(astVarEmpty,NULL,NULL,NULL,NULL,NULL); }
+	       $$=MkNode(astVarAssign,p,$4,$6,NULL,NULL);
+	       push_vs(p);
+    }
+    | /* EMPTY */ { $$=MkNode(astVarEmpty,NULL,NULL,NULL,NULL,NULL); }
 
-      ;
+    ;
 
 stmts
       : stmts stmt { $$=MkNode(astStmtSeq,NULL,$1,$2,NULL,NULL); pop_vs();  }
@@ -1013,6 +1014,23 @@ stmt
 			push_vs(NULL);
 
      }
+
+    | FOR {
+
+          p = new_symbol("");
+          push_wh(p);
+          enableReturn =0;
+
+    } location IN expr stmt {
+
+         $$=MkNode(astForStmt,NULL,$3,$5,$6,NULL);
+         p6=pop_vs();
+         p4=pop_vs();
+         pop_wh();
+         if(TopOfWhile <0) enableReturn=1;
+         push_vs(NULL);
+
+    }
 	 | expr TIMES { p = new_symbol("");
 				push_wh(p);
 				enableReturn =0;
@@ -1249,8 +1267,8 @@ location
 			}
 			else{
 
-				printf("Error: '%s' undeclared variable",$1);
-				exit(1);
+				//printf("Error: '%s' undeclared variable",$1);
+				//exit(1);
 			 }
 			//copy_symbol(p2,p1);
 			$$=MkNode(astLocation,p1,NULL,NULL,NULL,NULL);

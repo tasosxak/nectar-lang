@@ -132,6 +132,7 @@
 #define astStaticMethodCall 519
 #define astSelf 520
 #define astArrayIndex 521
+#define astForStmt 522
 /* ----------------------------------------------------------- */
 /* ----- THE STRUCTURE FOR THE ABSTRACT SYNTAX TREE NODES ---- */
 /* ----------------------------------------------------------- */

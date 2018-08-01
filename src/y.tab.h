@@ -28,20 +28,22 @@
 #define VAR 284
 #define STR 285
 #define SELF 286
-#define DEC_CONST 287
-#define LITERAL 288
-#define REAL_DEC_CONST 289
-#define IDIV 290
-#define GE 291
-#define LE 292
-#define NE 293
-#define EQ 294
-#define ID 295
-#define INC 296
-#define DEC 297
-#define ADDASSIGN 298
-#define SUBASSIGN 299
-#define LOWER_THAN_ELSE 300
+#define IN 287
+#define FOR 288
+#define DEC_CONST 289
+#define LITERAL 290
+#define REAL_DEC_CONST 291
+#define IDIV 292
+#define GE 293
+#define LE 294
+#define NE 295
+#define EQ 296
+#define ID 297
+#define INC 298
+#define DEC 299
+#define ADDASSIGN 300
+#define SUBASSIGN 301
+#define LOWER_THAN_ELSE 302
 #ifdef YYSTYPE
 #undef  YYSTYPE_IS_DECLARED
 #define YYSTYPE_IS_DECLARED 1

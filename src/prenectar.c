@@ -15,7 +15,7 @@ void processFile(char *inputFileName,char *srcDirectory){
 		//printf("%s\n",srcDirectory);
 		strcat(path,inputFileName);
 		//printf("%s\n",inputFileName);
-		strcat(path,".nr");
+		strcat(path,".nec");
 		//printf("%s\n",path);
 		file = fopen(path, "r");
 
@@ -23,7 +23,7 @@ void processFile(char *inputFileName,char *srcDirectory){
 			strcpy(srcDirectory, "nectar-lang/lib/");
 			strcpy(path,srcDirectory);
 			strcat(path,inputFileName);
-			strcat(path,".nr");
+			strcat(path,".nec");
 			file = fopen(path, "r");
 
 			if(file == NULL){
@@ -93,7 +93,7 @@ int main(int argc, char *argv[])
     	char* srcFileName = argv[3];
     	char* srcDirectory= argv[2];
 	char filename[50];
-	sprintf(filename,"%s.nrf",argv[3]);
+	sprintf(filename,"%s.nectar",argv[3]);
 
 	finalSrcFile = fopen(filename, "w+");
     	processFile(srcFileName,srcDirectory);

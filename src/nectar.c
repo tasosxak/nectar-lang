@@ -56,40 +56,40 @@ int main(int argc, char* argv[]){
 		system(str);
 
 		#ifdef __linux__
-		sprintf(str,"echo \' func main() -> int { \n \n say \"Hello world!\";\n\nreturn 0;\n}\'>>%s/src/%s.nr",argv[2],argv[2]);
+		sprintf(str,"echo \'func main() -> int { \n \n say \"Hello world!\";\n\nreturn 0;\n}\'>>%s/src/%s.nec",argv[2],argv[2]);
 		#elif _WIN32
-		sprintf(str,"@echo func main() -^> int { >%s\\src\\%s.nr",argv[2],argv[2]);
+		sprintf(str,"@echo func main() -^> int { >%s\\src\\%s.nec",argv[2],argv[2]);
 		system(str);
-		sprintf(str,"@echo say \"Hello world!\";>>%s\\src\\%s.nr",argv[2],argv[2]);
+		sprintf(str,"@echo say \"Hello world!\";>>%s\\src\\%s.nec",argv[2],argv[2]);
 		system(str);
-		sprintf(str,"@echo return 0; >>%s\\src\\%s.nr",argv[2],argv[2]);
+		sprintf(str,"@echo return 0; >>%s\\src\\%s.nec",argv[2],argv[2]);
 		system(str);
-		sprintf(str,"@echo } >>%s\\src\\%s.nr",argv[2],argv[2]);
+		sprintf(str,"@echo } >>%s\\src\\%s.nec",argv[2],argv[2]);
 		#endif
 		system(str);
 	}
 	else if(strcmp(argv[1],"build") == 0){
 
 			#ifdef __linux__
-			sprintf(str,"prenectar %s/src/%s.nr %s/src/ %s",argv[2],argv[2],argv[2],argv[2]);
+			sprintf(str,"prenectar %s/src/%s.nec %s/src/ %s",argv[2],argv[2],argv[2],argv[2]);
 			#elif _WIN32
-			sprintf(str,"prenectar %s\\src\\%s.nr %s\\src\\ %s",argv[2],argv[2],argv[2],argv[2]);
+			sprintf(str,"prenectar %s\\src\\%s.nec %s\\src\\ %s",argv[2],argv[2],argv[2],argv[2]);
 			#endif
 			error = system(str);
 			if(error) exit(1);
 
 			#ifdef __linux__
-			sprintf(str,"nectarc %s.nrf",argv[2]);
+			sprintf(str,"nectarc %s.nectar",argv[2]);
 			#elif _WIN32
-			sprintf(str,"nectarc %s.nrf",argv[2]);
+			sprintf(str,"nectarc %s.nectar",argv[2]);
 			#endif
 			error = system(str);
 
 
 			#ifdef __linux__
-			sprintf(str,"mv %s.nrf %s/",argv[2],argv[2]);
+			sprintf(str,"mv %s.nectar %s/",argv[2],argv[2]);
 			#elif _WIN32
-			sprintf(str,"move %s.nrf %s > nul 2> nul",argv[2],argv[2]);
+			sprintf(str,"move %s.nectar %s > nul 2> nul",argv[2],argv[2]);
 			#endif
 			system(str);
 
@@ -101,6 +101,45 @@ int main(int argc, char* argv[]){
 			system(str);
 	}
 	else if(strcmp(argv[1],"run") == 0){
+
+			#ifdef __linux__
+			sprintf(str,"colibri   %s/exec/%s.cex",argv[2],argv[2]);
+			#elif _WIN32
+			sprintf(str,"colibri   %s\\exec\\%s.cex",argv[2],argv[2]);
+			#endif
+			system(str);
+	}
+  else if(strcmp(argv[1],"exec") == 0){
+
+      #ifdef __linux__
+      sprintf(str,"prenectar %s/src/%s.nec %s/src/ %s",argv[2],argv[2],argv[2],argv[2]);
+      #elif _WIN32
+      sprintf(str,"prenectar %s\\src\\%s.nec %s\\src\\ %s",argv[2],argv[2],argv[2],argv[2]);
+      #endif
+      error = system(str);
+      if(error) exit(1);
+
+      #ifdef __linux__
+      sprintf(str,"nectarc %s.nectar",argv[2]);
+      #elif _WIN32
+      sprintf(str,"nectarc %s.nectar",argv[2]);
+      #endif
+      error = system(str);
+
+
+      #ifdef __linux__
+      sprintf(str,"mv %s.nectar %s/",argv[2],argv[2]);
+      #elif _WIN32
+      sprintf(str,"move %s.nectar %s > nul 2> nul",argv[2],argv[2]);
+      #endif
+      system(str);
+
+      #ifdef __linux__
+      sprintf(str,"mv  %s.cex  %s/exec/",argv[2],argv[2]);
+      #elif _WIN32
+      sprintf(str,"move  %s.cex  %s\\exec > nul 2> nul",argv[2],argv[2]);
+      #endif
+      system(str);
 
 			#ifdef __linux__
 			sprintf(str,"colibri   %s/exec/%s.cex",argv[2],argv[2]);
