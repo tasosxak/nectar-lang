@@ -13,12 +13,13 @@
 Nectar is a new general-purposed programming language. It comprises a combination of both high-level and low-level language features. Nectar supports object-orentied and procedural programming.
 
 Nectar's futures include:
-* **Portability** : The compiler of Nectar produces bytecode for colibri virtual machine. So you can execute the same bytecode
-files on a wide variety of different platforms (Windows,Linux,MacOS etc).
-* **Scalability** : You can add libraries and Nectar provides better structure for .
-* **Learnability** : Nectar has clean and easy syntax that allows new developers to learn quickly and easy.
-* **Readability** : Nectar has similar syntax to that of many programming languages (such a Javascript,Ruby, Swift,C++,Java).
 
+| Feature | Description |
+| --- | --- |
+| **Portability** | The compiler of Nectar produces bytecode for colibri virtual machine. So you can execute the same bytecode files on a wide variety of different platforms (Windows,Linux,MacOS etc).|
+| **Scalability** | You can add libraries and Nectar provides better structure for . |
+| **Learnability** | Nectar has clean and easy syntax that allows new developers to learn quickly and easy. |
+| **Readability** | Nectar has similar syntax to that of many programming languages (such a Javascript,Ruby, Swift,C++,Java). |
 
 # Installation
 
