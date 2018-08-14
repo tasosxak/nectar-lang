@@ -5,7 +5,7 @@
 <div align="center">	
 <table align="center"><tr>
 <td style="border: 0px;"><img src = "https://img.shields.io/badge/build-pass-green.png?longCache=true&style=flat-square"/></td>	<td style="border: 0px;"><img src = "https://img.shields.io/badge/version-0.2-blue.png?longCache=true&style=flat-square"/></td>
-<td style="border: 0px;"><img src = "https://img.shields.io/badge/mode-test-red.png?longCache=true&style=flat-square"/></td>
+<td style="border: 0px;"><img src = "https://img.shields.io/badge/status-unstable-red.png?longCache=true&style=flat-square"/></td>
 <td style="border: 0px;"><img src = "https://img.shields.io/badge/platforms-Linux--Windows-yellow.png?longCache=true&style=flat-square"/></td></tr></table>
 	</center>
 </div>
