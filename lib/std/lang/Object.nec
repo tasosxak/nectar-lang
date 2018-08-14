@@ -1,0 +1,8 @@
+
+pub class Object {
+
+  pub new()->Object {
+    return self;
+  }
+
+}

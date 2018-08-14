@@ -6,7 +6,7 @@
 #include <ctype.h>
 #include "y.tab.h"
 
-#define NUM_RESERVED_NAMES 31
+#define NUM_RESERVED_NAMES 34
 
 int id_or_keyword(char *name);
 
@@ -47,6 +47,11 @@ int id_or_keyword(char *name);
                                 //printf("%s\n",yytext);
                                 strcpy(yylval.ystr,yytext);
                                 return(IDIV);
+                          }
+"..."                        {
+                                //printf("%s\n",yytext);
+                                strcpy(yylval.ystr,yytext);
+                                return(THREE_DOTS);
                           }
 "/"                        {
                                //printf("%s\n",yytext);
@@ -193,11 +198,6 @@ int id_or_keyword(char *name);
                              return('.');
                           }
 
-"@"                         {
-                                  //printf("%s\n",yytext);
-                                  strcpy(yylval.ystr,yytext);
-                                  return('@');
-                            }
 ":"                         {
                                   //printf("%s\n",yytext);
                                   strcpy(yylval.ystr,yytext);
@@ -211,16 +211,21 @@ int id_or_keyword(char *name);
                                 return(RIGHTARROW);
                             }
 
-[a-zA-Z]([a-zA-Z]|[0-9]|"_")*  {
+ ("@"|"_"|[a-zA-Z])([a-zA-Z]|[0-9]|"_")*[!?]? {
                                    int i;
-                    		  // printf("%s\n",yytext);
-				   i = id_or_keyword(yytext);
+                    		           // printf("%s\n",yytext);
+				                           i = id_or_keyword(yytext);
                                    if(i == ID)
                                       strcpy(yylval.ystr,yytext);
-				   else
-		 		     yylval.yint = i;
+				                           else
+		 		                              yylval.yint = i;
 
-				   return(i);
+				                           return(i);
+                               }
+ ("$")([a-z])*                 {
+				                           strcpy(yylval.ystr,yytext);
+
+				                           return(NOTATION);
                                }
 
 
@@ -233,8 +238,8 @@ int id_or_keyword(char *name);
 
 %%
 
-static char *RESERVED_NAMES[NUM_RESERVED_NAMES] = {"false","true","int","return","if","else","while","break","try","read","say","times","use","unless","not","and","or","real","puts","bool","func","class","private","pub","abstract","meth","var","str","self","in","for"};
-static int KEYWORD_VALUE[NUM_RESERVED_NAMES] = {FALSE,TRUE,INT,RETURN,IF,ELSE,WHILE,BREAK,TRY,READ,PRINTLN,TIMES,USE,UNLESS,NOT,AND,OR,REAL,PUTS,BOOL,FUNC,CLASS,PRIVATE,PUBLIC,ABSTRACT,METH,VAR,STR,SELF,IN,FOR};
+static char *RESERVED_NAMES[NUM_RESERVED_NAMES] = {"false","true","int","return","if","else","while","break","try","read","say","times","use","unless","not","and","or","real","puts","bool","func","class","private","pub","abstract","meth","var","str","self","in","for","final", "extends","shared"};
+static int KEYWORD_VALUE[NUM_RESERVED_NAMES] = {FALSE,TRUE,INT,RETURN,IF,ELSE,WHILE,BREAK,TRY,READ,PRINTLN,TIMES,USE,UNLESS,NOT,AND,OR,REAL,PUTS,BOOL,FUNC,CLASS,PRIVATE,PUBLIC,ABSTRACT,METH,VAR,STR,SELF,IN,FOR,FINAL,EXTENDS,SHARED};
 
 int id_or_keyword(char *name){
   int i,k;

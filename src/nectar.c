@@ -20,7 +20,7 @@ int main(int argc, char* argv[]){
 	char* filename;
 	char str[255];
 	int error = 0;
-  char version[] = "0.1";
+  char version[] = "0.2";
   char name[] = "birth";
 
 	if(strcmp(argv[1],"create") == 0){

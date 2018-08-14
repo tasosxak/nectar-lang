@@ -17,7 +17,6 @@
 #include "nectar_defs.h"
 
 HASH_TAB ht; //Symbol Table for Methods,Classes and declarations
-HASH_TAB arr_st[MAX_SYM_TABLES]; //Method's Symbol Table
 
 int topOfSt = 0; //The current activated method's symbol table
 int TopOfStack=-1;
@@ -26,7 +25,7 @@ int TopOfRt = -1;
 int numOfParams = 0;  // For number of method's parameters
 int numOfArguments =0; // For "arguments and parameters matching"
 int enableReturn = 1;
-
+int shared = 0;
 /*** FOR MIX CODE GENERATION ***/
 int NUM_BYTES_VAR=0; //Number of variables (for mix variable names)
 int NUM_METH=0; //Number of methods (for mix method names)
@@ -44,6 +43,8 @@ symbol *vs[30];
 symbol *whiles[30];  //For "break in while" checking
 symbol *returns[30]; // Check if return keyword exists for all cases in a method
 symbol *cur_class;
+symbol *cur_method;
+symbol *cur_func;
 int CUR_TYPE = 1000;
 symbol *p,*p1,*p2,*p3,*p4,*p5,*p6,*p7,*p8,*p9;
 
@@ -60,22 +61,22 @@ AstNode *TreeRoot;
     struct AstNode_tag *stnode;
 }
 
-%token <yint> FALSE TRUE INT RETURN IF ELSE WHILE BREAK TRY READ PRINTLN TIMES USE UNLESS NOT AND OR REAL PUTS BOOL FUNC RIGHTARROW CLASS PRIVATE PUBLIC ABSTRACT METH VAR STR SELF IN FOR
-%token <ystr> DEC_CONST LITERAL REAL_DEC_CONST
+%token <yint> FALSE TRUE INT RETURN IF ELSE WHILE BREAK TRY READ PRINTLN TIMES USE UNLESS NOT AND OR REAL PUTS BOOL FUNC RIGHTARROW CLASS PRIVATE PUBLIC ABSTRACT METH VAR STR SELF IN FOR FINAL EXTENDS SHARED
+%token <ystr> DEC_CONST LITERAL REAL_DEC_CONST THREE_DOTS
 %token <ystr> '(' ')' '{' '}'
 %token <ystr> '*' '/' '+' '-' '=' ';' ',' IDIV
 %token <ystr> GE '>' LE '<' NE EQ
-%token <ystr> ID
+%token <ystr> ID NOTATION
 %token <ystr> INC DEC ADDASSIGN SUBASSIGN
 
 %type <stnode> program definitions meth_list
-%type <stnode> class bodyclass fields field attrs modifier methodef
+%type <stnode> class bodyclass fields field attrs modifier methodef extension
 %type <stnode> meth func params body formals type
-%type <stnode> decls decl_list decl vars
+%type <stnode> decl vars note
 %type <stnode> stmts stmt block singlestmt inline separator
 %type <stnode> expr logAnd_expr not_expr comp_expr
 %type <stnode> addassign subassign assign location method relop listedassign nestedassign
-%type <stnode> add_expr addop term mulop factor incdec
+%type <stnode> add_expr addop term mulop factor incdec other_elements elements sequence
 %type <stnode> actuals args
 
 %nonassoc LOWER_THAN_ELSE
@@ -86,7 +87,7 @@ AstNode *TreeRoot;
 program
        :  definitions {
 
-      		     p1 = findsymb("main",1);//Every program in coral language must has a main function
+      		     p1 = findsymb("main",0);//Every program in coral language must has a main function
       		     if(!p1) {
       					printf("Error : 'main' not found in program");
       					exit(1);
@@ -103,7 +104,7 @@ program
 definitions
        	: class definitions { $$=MkNode(astClassDef,NULL,$1,$2,NULL,NULL); }
        	| func definitions { $$=MkNode(astFuncDef,NULL,$1,$2,NULL,NULL); }
-       	| decl definitions { $$=MkNode(astDeclDef,NULL,$1,$2,NULL,NULL); }
+       	/*| decl definitions { $$=MkNode(astDeclDef,NULL,$1,$2,NULL,NULL); }*/
        	| /*EMPTY*/  { $$=MkNode(astEmptyDef,NULL,NULL,NULL,NULL,NULL); }
         ;
 
@@ -114,7 +115,7 @@ meth_list
        | /*EMPTY*/ { $$=MkNode(astEmptyMethList,NULL,NULL,NULL,NULL,NULL); }
        ;
 methodef
-       : meth { $$=$1;}
+       : note meth { $$=$2;}
        ;
 
 class
@@ -126,33 +127,58 @@ class
          p2 = new_symbol(CLASS_NAME);
          p2->accessor = p1->accessor;
          p2->lvalue = 0;
+
          p2->typos = CUR_TYPE++;
-         //Check if main method have parameters
-         if((strcmp(p2->name,"Object") == 0)){
 
-           printf("Error: Object class already exists\n");
-           exit(1);
-         }
-
-         add_symbols_to_table(p2,1);
+         add_symbols_to_table(p2,0);
 
          if(topOfSt == MAX_SYM_TABLES) {
   				printf("Out of memory :( , the number of classes must be less than %d",MAX_SYM_TABLES); //if the number of methods is greater than MAX_SYM_TABLES constant
   				exit(1);
   			 }
 
+         p2->mht= malloc(sizeof(HASH_TAB));
          cur_class = p2;
 
-       } bodyclass {
+
+       } extension {
+
+         if((strcmp(cur_class->name,"Object") == 0)){
+
+           strcpy(cur_class->base_class_name,"NULL");
+         }
+       }bodyclass {
 
 
-         $$=MkNode(astClass,cur_class,$5,NULL,NULL,NULL);
+         $$=MkNode(astClass,cur_class,$7,NULL,NULL,NULL);
 
          cur_class = NULL;
          strcpy(CLASS_NAME,"");
        }
        ;
 
+extension
+         : EXTENDS ID {
+
+               p1 = findsymb($2,0);
+
+         			 if(p1!=NULL){
+         				    strcpy(cur_class->base_class_name,p1->name);
+         			 }
+         			 else{
+
+         				printf("Error: '%s' undeclared class",$1);
+         				exit(1);
+         			 }
+
+         			 //$$=MkNode(astExtension,p1,NULL,NULL,NULL,NULL);
+         }
+         | /* EMPTY */ {
+
+           strcpy(cur_class->base_class_name,"Object");
+           //$$=MkNode(astNoExtension,NULL,NULL,NULL,NULL,NULL);
+         }
+         ;
 modifier
        	 : /*PRIVATE*/ {
 
@@ -168,13 +194,23 @@ modifier
              p1->accessor = PUBLIC_ACC;
              push_vs(p1);
          }
-       	 | ABSTRACT{
+         ;
+note
+        : NOTATION {
 
-             $$=MkNode(astAbstractClassMod,NULL,NULL,NULL,NULL,NULL);
-             p1 = new_symbol(""); //create symbol
-   	         p1->accessor = ABSTRACT_ACC;
-   	         push_vs(p1);
+             if(strcmp($1,"$shared")==0){
+
+                shared= 1;
+
+             }
+             else if (strcmp($1,"$final")==0){
+
+             }
+             else if (strcmp($1,"$abstract")==0){
+
+             }
          }
+         | /* EMPTY */ {}
        	 ;
 
 
@@ -183,14 +219,21 @@ fields
       	 | /* EMPTY */ {$$=MkNode(astEmptyFields,NULL,NULL,NULL,NULL,NULL);}
       	 ;
 field
-      	 : '@' ID ':' type attrs {
+      	 : ID ':' type attrs separator {
 
+               if(startswith("@",$1)==0) {
+
+                 printf("Error: The fields of class should start with '@'.\n");
+                 exit(1);
+               }
                p1 = pop_vs();
-               p3 = new_symbol($2);
+               p3 = new_symbol($1);
                p3->sclass = MEMORY;
                p3->typos = p1->typos;
                p3->accessor = PRIVATE_ACC;
-               p3->lvalue = 0;
+               p3->lvalue = 1;
+               p3->field = 1;
+               strcpy(p3->nameclass ,p1->name);
                add_symbols_to_table(p3,1);
 
                if(topOfSt == MAX_SYM_TABLES) {
@@ -198,30 +241,35 @@ field
                 exit(1);
                }
 
-              $$=MkNode(astField,p3,$5,NULL,NULL,NULL);
+              $$=MkNode(astField,p3,$4,NULL,NULL,NULL);
 
 
          }
-      	 | '@' ID ':' type '=' expr attrs {
+      	 | ID ':' type '=' expr attrs separator {
 
+           if(startswith("@",$1)==0) {
+
+             printf("Error: The fields of class should start with '@'.\n");
+             exit(1);
+           }
 
            p1 = pop_vs();
            p2 = pop_vs();
 
-           p4 = new_symbol($2);
+           p4 = new_symbol($1);
            p4->sclass = MEMORY;
            p4->typos = p2->typos;
            p4->accessor = PRIVATE_ACC;
-           p4->lvalue = 0;
-
-           add_symbols_to_table(p4,0);
+           p4->lvalue = 1;
+           p4->field = 1;
+           add_symbols_to_table(p4,1);
 
           if(topOfSt == MAX_SYM_TABLES) {
             printf("Out of memory :( , the number of attributes must be less than %d",MAX_SYM_TABLES); //if the number of methods is greater than MAX_SYM_TABLES constant
             exit(1);
           }
 
-           $$=MkNode(astFieldAssign,p4,$6,$7,NULL,NULL);
+           $$=MkNode(astFieldAssign,p4,$5,$6,NULL,NULL);
 
 
          }
@@ -230,6 +278,12 @@ field
 attrs
       	: ',' ID attrs {
 
+          if(startswith("@",$2)==0) {
+
+            printf("Error: The fields of class should start with '@'.\n");
+            exit(1);
+          }
+
            p1 = pop_vs();
            //p2 = pop_vs();
 
@@ -237,8 +291,9 @@ attrs
            p3->sclass = MEMORY;
            p3->typos = p1->typos;
            p3->accessor = PRIVATE_ACC;
-           p3->lvalue = 0;
-
+           p3->lvalue = 1;
+           p3->field = 1;
+           strcpy(p3->nameclass ,p1->name);
            add_symbols_to_table(p3,1);
 
            if(topOfSt == MAX_SYM_TABLES) {
@@ -254,6 +309,12 @@ attrs
 
       	| ',' ID '=' expr attrs {
 
+          if(startswith("@",$2)==0) {
+
+            printf("Error: The fields of class should start with '@'.\n");
+            exit(1);
+          }
+
           p1 = pop_vs();
           p2 = pop_vs();
           //p3 = pop_vs();
@@ -262,9 +323,9 @@ attrs
           p4->sclass = MEMORY;
           p4->typos = p2->typos;
           p4->accessor = PRIVATE_ACC;
-          p4->lvalue = 0;
-
-          add_symbols_to_table(p4,0);
+          p4->lvalue = 1;
+          strcpy(p4->nameclass ,p2->name);
+          add_symbols_to_table(p4,1);
 
           if(topOfSt == MAX_SYM_TABLES) {
            printf("Out of memory :( , the number of attributes must be less than %d",MAX_SYM_TABLES); //if the number of methods is greater than MAX_SYM_TABLES constant
@@ -293,52 +354,53 @@ meth
           char snum[6];
           nitoa(CUR_TYPE -1,snum);
           strcat(METHOD_NAME,snum);
-          numOfParams = 1;
+
 		      push_rt(new_symbol("method"));
+          p2 = new_symbol("");
+          set_class_types(p2,METHOD);
+          p2->lvalue = 0;
+          p2->mht= malloc(sizeof(HASH_TAB));
+          if((strcmp($2,"new") == 0)){
+            p2->modifier = SHARED_MOD;
+            numOfParams = 1;
+          }
+          else {
+
+              if(shared == 1) {
+                p2->modifier = SHARED_MOD;
+              }
+              else{
+                numOfParams = 1;
+              }
+        }
+
+          cur_method = p2;
+          push_vs(p2);
 
         } '('params')' RIGHTARROW type {
 
     			 p1 = pop_vs();
+           p2 = pop_vs();
            p3 = pop_vs();
-    			 p2 = new_symbol(METHOD_NAME);
-    			 p2->lvalue = 0;
 
-    			 set_class_types(p2,METHOD);
+           strcpy(p2->name,METHOD_NAME);
+
     			 //copy_attributes(p2,p1);
            p2->typos = p1->typos;
            p2->accessor = p3->accessor;
 
-    			 //Check if main method have parameters
-    			 if((strcmp(p2->name,"main") == 0) && (numOfParams>0)){
-
-    				 printf("Error: The main method must have no parameters\n");
-    				 exit(1);
-
-    			  }
-
-    			 /*Create a pseudonym for this method, which is important for code generation*/
-    			 if(strcmp(p2->name,"main") !=0){
-    				 strcpy(NUM_VAR_ARR, "@METH_");
-    				 sprintf(TEMP_NUM_VAR_ARR, "%d", NUM_METH);
-    				 strcpy(p2->pseudonym, strcat(NUM_VAR_ARR, TEMP_NUM_VAR_ARR));
-    				 NUM_METH++;
-    			 }else{
-    				strcpy(p2->pseudonym,"_main");
-    			 }
-
-
-    			 add_symbols_to_table(p2,0);
 
     			 if(topOfSt == MAX_SYM_TABLES) {
     				printf("Out of memory :( , the number of methods must be less than %d",MAX_SYM_TABLES); //if the number of methods is greater than MAX_SYM_TABLES constant
     				exit(1);
     			 }
 
-
+           add_symbols_to_table(p2,2);
 
     			 strcpy(METHOD_NAME,"");
            //push_vs(p1);
     			 push_vs(p2);
+
 		 }
 
 		 body {
@@ -359,13 +421,12 @@ meth
 
 	 	$$=MkNode(astMethLast,p2,$5,$8,$10,NULL);
 
-		if(topOfSt < MAX_SYM_TABLES)
-				topOfSt++;
-
 		numOfParams =0; //reset the number of parameters for the next method
 		enableReturn=1;
 		NUM_PAR =0;
 		NUM_BYTES_VAR = 0;
+    cur_method =  NULL;
+    shared = 0;
 	}
 
       ;
@@ -375,17 +436,20 @@ func
 
       		 strcat(METHOD_NAME,$2);
       		 push_rt(new_symbol("method"));
+           p2 = new_symbol("");
+           p2->lvalue = 0;
+           set_class_types(p2,METHOD);
+           p2->mht= malloc(sizeof(HASH_TAB));
+           cur_func = p2;
+           push_vs(p2);
 
       		 } '('params')' RIGHTARROW type {
 
       			 p1 = pop_vs();
-
-      			 p2 = new_symbol(METHOD_NAME);
-      			 p2->lvalue = 0;
-
-      			 set_class_types(p2,METHOD);
+             p2 = pop_vs();
+             strcpy(p2->name,METHOD_NAME);
       			 //copy_attributes(p2,p1);
-            p2->typos = p1->typos;
+             p2->typos = p1->typos;
 
       			 //Check if main method have parameters
       			 if((strcmp(p2->name,"main") == 0) && (numOfParams>0)){
@@ -406,18 +470,16 @@ func
       			 }
 
 
-      			 add_symbols_to_table(p2,1);
-
       			 if(topOfSt == MAX_SYM_TABLES) {
       				printf("Out of memory :( , the number of methods must be less than %d",MAX_SYM_TABLES); //if the number of methods is greater than MAX_SYM_TABLES constant
       				exit(1);
       			 }
 
-
-
+             add_symbols_to_table(p2,0);
       			 strcpy(METHOD_NAME,"");
             // push_vs(p1);
              push_vs(p2);
+
       		 }
 
       		 body {
@@ -446,6 +508,7 @@ func
       		enableReturn=1;
       		NUM_PAR =0;
       		NUM_BYTES_VAR = 0;
+          cur_func = NULL;
       	}
 
             ;
@@ -458,7 +521,7 @@ params
 	       p3 = new_symbol($2);
          p3->arg = 1;
 	       copy_attributes(p3,p2);
-
+         strcpy(p3->nameclass,p2->name);
 		     sprintf(METHOD_NAME_TEMP,"%d",p2->typos);
 		     strcat(METHOD_NAME,METHOD_NAME_TEMP);
 
@@ -469,7 +532,7 @@ params
 		     strcpy(p3->pseudonym, strcat(NUM_VAR_ARR, TEMP_NUM_VAR_ARR));
 		     NUM_PAR ++;
 
-	       add_symbols_to_table(p3,0);
+	       add_symbols_to_table(p3,3);
 	       $$=MkNode(astParamSeq,p3,$4,$2,NULL,NULL);
 		     numOfParams++;
          p3->index = numOfParams;
@@ -485,7 +548,7 @@ formals
 	     p3 = new_symbol($2);
 	     p3->arg = 1;
 	     copy_attributes(p3,p2);
-
+       strcpy(p3->nameclass,p2->name);
 		   sprintf(METHOD_NAME_TEMP,"%d",p2->typos);
 		   strcat(METHOD_NAME,METHOD_NAME_TEMP);
 
@@ -494,20 +557,37 @@ formals
 		   strcpy(p3->pseudonym, strcat(NUM_VAR_ARR, TEMP_NUM_VAR_ARR));
 		   NUM_PAR++;
 
-	     add_symbols_to_table(p3,0);
+	     add_symbols_to_table(p3,3);
 	     $$=MkNode(astFormalsSeq,p3,$4,$2,NULL,NULL);
 		   numOfParams++;
        p3->index = numOfParams;
 		 }
       | /* EMPTY */ { $$=MkNode(astFormalsEmpty,NULL,NULL,NULL,NULL,NULL);}
+      | THREE_DOTS {
 
+           p2 = pop_vs();
+           p3 = new_symbol("...");
+           p3->arg = 1;
+           p3->typos = ARRAY;
+
+           sprintf(METHOD_NAME_TEMP,"%d",p2->typos);
+           strcat(METHOD_NAME,METHOD_NAME_TEMP);
+           NUM_PAR++;
+           add_symbols_to_table(p3,0);
+           numOfParams++;
+           p3->index = numOfParams;
+
+           $$=MkNode(astFormalsDots,p3,NULL,NULL,NULL,NULL);
+
+
+      }
       ;
 
 type
       :INT {
 
           $$=MkNode(astInt,NULL,NULL,NULL,NULL,NULL);
- 	        p1 = new_symbol(""); //create symbol
+ 	        p1 = new_symbol("int"); //create symbol
 	        set_class_types(p1,$1); //the type of symbol is integer
 	        push_vs(p1);
 
@@ -515,7 +595,7 @@ type
 	  | REAL {
 
           $$=MkNode(astReal,NULL,NULL,NULL,NULL,NULL);
- 	        p1 = new_symbol(""); //create symbol
+ 	        p1 = new_symbol("real"); //create symbol
 	        set_class_types(p1,$1); //the type of symbol is real
 	        push_vs(p1);
 
@@ -523,7 +603,7 @@ type
 	  | BOOL {
 
           $$=MkNode(astBool,NULL,NULL,NULL,NULL,NULL);
- 	        p1 = new_symbol(""); //create symbol
+ 	        p1 = new_symbol("bool"); //create symbol
 	        set_class_types(p1,$1); //the type of symbol is integer
 	        push_vs(p1);
 
@@ -532,7 +612,7 @@ type
     | STR {
 
               $$=MkNode(astStr,NULL,NULL,NULL,NULL,NULL);
-     	        p1 = new_symbol(""); //create symbol
+     	        p1 = new_symbol("str"); //create symbol
     	        set_class_types(p1,$1); //the type of symbol is string
     	        push_vs(p1);
 
@@ -541,7 +621,7 @@ type
 
           $$=MkNode(astPointer,NULL,NULL,NULL,NULL,NULL);
  	        p1 = new_symbol($1); //create symbol
-          p = findsymb($1,1);
+          p = findsymb($1,0);
 	        p1->typos = p->typos;
 	        push_vs(p1);
 
@@ -549,21 +629,8 @@ type
       ;
 
 body
-      : '{'decls stmts'}' {
-	 $$=MkNode(astBody,NULL,$2,$3,NULL,NULL);}
-      ;
-
-
-decls
-      : decl_list decl { $$=MkNode(astDeclsSeq,NULL,$1,$2,NULL,NULL);}
-      | /* EMPTY */ { $$=MkNode(astDeclsEmpty,NULL,NULL,NULL,NULL,NULL);}
-
-      ;
-
-decl_list
-      : decl_list decl { $$=MkNode(astDeclListSeq,NULL,$1,$2,NULL,NULL);}
-      | /* EMPTY */ { $$=MkNode(astDeclListEmpty,NULL,NULL,NULL,NULL,NULL);}
-
+      : '{'stmts'}' {
+	 $$=MkNode(astBody,NULL,$2,NULL,NULL,NULL);}
       ;
 
 decl
@@ -595,11 +662,11 @@ decl
 
         			break;
               case STR:
-
+                  mk_iterable(p2);
               break;
               default:
 
-                p =  findsymb(p1->name,1);
+                p =  findsymb(p1->name,0);
                 if(p == NULL){
                     printf("Error: Undeclared class '%s\n",p1->name);
                     exit(0);
@@ -612,12 +679,12 @@ decl
             strcpy(p2->pseudonym, strcat(NUM_VAR_ARR, TEMP_NUM_VAR_ARR));
 
         		p2->sclass = MEMORY;
-        		add_symbols_to_table(p2,0);
+        		add_symbols_to_table(p2,3);
 
         		push_vs(p1);
 
 
-  } vars separator {
+  } vars {
 
     		pop_vs();
     		$$=MkNode(astDecl,NULL,$4,$6,NULL,NULL);
@@ -658,12 +725,12 @@ decl
 		    strcpy(p2->pseudonym, strcat(NUM_VAR_ARR, TEMP_NUM_VAR_ARR));
 
 		    p3->sclass = MEMORY;
-		    add_symbols_to_table(p3,0);
+		    add_symbols_to_table(p3,3);
 
 		    push_vs(p2);
 
 
-		} vars separator {
+		} vars {
 
 		    pop_vs();
 		    $$=MkNode(astDecl,NULL,$4,$9,NULL,NULL);
@@ -697,6 +764,9 @@ decl
                  sprintf(TEMP_NUM_VAR_ARR, "%d", NUM_BYTES_VAR);
 
                break;
+               case STR:
+                   mk_iterable(p2);
+               break;
           }
 
           strcpy(p2->pseudonym, strcat(NUM_VAR_ARR, TEMP_NUM_VAR_ARR));
@@ -707,11 +777,11 @@ decl
 
     	     copy_value(p2,p3);
     		   p2->sclass = MEMORY;
-    	     add_symbols_to_table(p2,0);
+    	     add_symbols_to_table(p2,3);
 
     		   push_vs(p1);
 
-	  } vars separator {
+	  } vars {
 
     	     pop_vs();
     	     $$=MkNode(astDeclAssign,NULL,$4,$6,$8,NULL);
@@ -748,7 +818,7 @@ vars
         strcpy(p2->pseudonym, strcat(NUM_VAR_ARR, TEMP_NUM_VAR_ARR));
 
 
-		    add_symbols_to_table(p2,0);
+		    add_symbols_to_table(p2,3);
 
 		    p2->sclass = MEMORY;
 		    push_vs(p1);
@@ -788,7 +858,7 @@ vars
   		 }
 
 	     copy_value(p2,p3);
-	     add_symbols_to_table(p2,0);
+	     add_symbols_to_table(p2,3);
 
 		   p2->sclass = MEMORY;
 	     push_vs(p1);
@@ -990,6 +1060,12 @@ stmt
 		  push_vs(NULL);
 
 	  }
+    | decl separator {
+
+		  $$ = $1;
+		  push_vs(NULL);
+
+	  }
 	  | singlestmt UNLESS expr separator {
 
 		  p3 = pop_vs();
@@ -1021,14 +1097,34 @@ stmt
           push_wh(p);
           enableReturn =0;
 
-    } location IN expr stmt {
+    } ID IN expr {
 
-         $$=MkNode(astForStmt,NULL,$3,$5,$6,NULL);
+      p4=pop_vs();
+
+      if(p4->iterable == 0){
+
+           printf("NotIterableError: The expression in for loop must be iterable.\n");
+           exit(0);
+      }
+
+      NUM_BYTES_VAR-=1;
+      p = new_symbol($3);
+      p->index = NUM_BYTES_VAR;
+      p->sclass = MEMORY;
+      p->typos = p4->typos;
+      add_symbols_to_table(p,3);
+      push_vs(p);
+
+    }stmt {
+
+
          p6=pop_vs();
-         p4=pop_vs();
+         p = pop_vs();
          pop_wh();
          if(TopOfWhile <0) enableReturn=1;
          push_vs(NULL);
+
+         $$=MkNode(astForStmt,p,$5,$7,NULL,NULL);
 
     }
 	 | expr TIMES { p = new_symbol("");
@@ -1164,7 +1260,7 @@ subassign
 
 
 assign
-      : location '='expr {
+      : location '=' expr {
 
 		 $$=MkNode(astAssign,NULL,$1,$3,NULL,NULL);
 	     p3 = pop_vs();
@@ -1259,8 +1355,20 @@ method
 
 location
       :ID {
-			p1 = findsymb($1,0);
 
+        if(startswith("@",$1) == 1){
+            if(shared == 1){
+
+              printf("Error: You cannot use field in shared method.\n");
+              exit(1);
+            }
+			       p1 = findsymb($1,1);
+        }
+        else {
+
+             p1 = findsymb($1,3);
+        }
+      //printf("%s\n",p1->name);
 			if(p1!=NULL){
 				//copy_symbol(p2,p1);
 				push_vs(p1);
@@ -1626,6 +1734,7 @@ add_expr
                break;
                case STR:
                   p->typos = STR;
+                  mk_iterable(p);
                break;
 
              }
@@ -1652,7 +1761,7 @@ term
 	     p3 = pop_vs();
 	     p1 = pop_vs();
 
-		 p = new_symbol("");
+		   p = new_symbol("");
 
 		 //p = check_muldiv_arithm_op(p1,p3);
 
@@ -1667,7 +1776,10 @@ term
 							p->typos = REAL;
 						break;
 						case INT:
-							p->typos = INT;
+              if($2->NodeType == astDivOp )
+                p->typos = REAL;
+              else
+							  p->typos = INT;
 						break;
 						case BOOL:
 						   printf("Error: bad operand types for binary operator \n");
@@ -1675,6 +1787,7 @@ term
 						break;
             case STR:
                 p->typos = STR;
+                mk_iterable(p);
             break;
 
 					}
@@ -1715,6 +1828,8 @@ term
 						break;
 						case INT:
 							  p->typos = STR;
+                mk_iterable(p);
+
 						break;
 						case BOOL:
 						    printf("Error: bad operand types for binary operator \n");
@@ -1788,9 +1903,15 @@ factor
           $$ = MkNode(astFalse,p1,NULL,NULL,NULL,NULL);
        }
      | SELF {
+
+          if(shared == 1){
+
+            printf("Error: You cannot use 'self' in shared method.\n");
+            exit(1);
+          }
           p1 = new_symbol("");
           p1->sclass=CONSTANT;
-          p = findsymb(CLASS_NAME,1);
+          p = findsymb(CLASS_NAME,0);
           p1->typos = p->typos;
           p1->lvalue=0;
           p1->timi=1;
@@ -1830,7 +1951,7 @@ factor
 		  strcpy(METHOD_NAME,"");
 		  strcpy(METHOD_NAME_TEMP,"");
 
-		  p = findsymb(p3->name,1);
+		  p = findsymb(p3->name,0);
 
 		  if(p == NULL){
              printf("Error: '%s' undeclared method",p3->name);
@@ -1878,8 +1999,7 @@ factor
 
                strcpy(METHOD_NAME,p1->name);
 
-
-               p6 = findsymb($1,1);
+               p6 = findsymb($1,0);
                int i;
                if(p6 != NULL){
                     char snum[6];
@@ -1895,21 +2015,27 @@ factor
                     }
 
                     if(p7 == NULL){
-                      printf("Undeclared method!\n");
+                      printf("Error: Method %s is undeclared.\n",p7->name);
                       exit(1);
                    }
-
+                   else if(p7->modifier != SHARED_MOD){
+                     printf("Error: Method %s is not shared.\n",p7->name);
+                     exit(1);
+                   }
                     p = p6;
-
                     $$ = MkNode(astStaticMethodCall,p,$3,$5,NULL,NULL);
 
                }
                else {
 
-                  p = findsymb($1,0);
+                  p = findsymb($1,3);
                   if(p == NULL){
-                         printf("Error: '%s' undeclared variable",$1);
-                         exit(1);
+
+                         p = findsymb($1,1);
+                         if(p == NULL){
+                           printf("Error: '%s' undeclared variable",$1);
+                           exit(1);
+                        }
                     }
 
                   char snum[6];
@@ -1917,24 +2043,33 @@ factor
                   strcat(METHOD_NAME,snum);
                   strcat(METHOD_NAME,METHOD_NAME_TEMP);
                   p3 = new_symbol(METHOD_NAME);
-
-                  p6 = findsymb(p->nameclass,1);
+                  p6 = findsymb(p->nameclass,0);
                   if(p6 != NULL){
 
                       i=mkkey(p3->name);
+                      //printf(p3->name);
                       p7=p6->mht->table[i];
-
                       while(p7 && (strcmp(p7->name,p3->name) !=0)){
-                               p7=p7->NextSymbol;
-                       }
+                              p7=p7->NextSymbol;
+                      }
 
-                      if(p6 == NULL){
+                      if(p7 == NULL){
                         printf("Undeclared method!\n");
                         exit(1);
                       }
+                      p2 = new_symbol(p7->name);
 
-                      //p = p6;
-                      $$ = MkNode(astMethodCall,p,$3,$5,NULL,NULL);
+                      p2->index = p->index;
+                      p2->typos = p->typos;
+                      strcpy(p2->nameclass, p->nameclass);
+                      p2->instance_method_type_call = p7->typos;
+                      p2->field = p->field;
+                      strcpy(p2->ax_name,p->name);
+
+                      $$ = MkNode(astMethodCall,p2,$3,$5,NULL,NULL);
+                  }else{
+                    printf("Error: '%s' is not class.",p->nameclass);
+                    exit(1);
                   }
 
                }
@@ -1987,6 +2122,7 @@ factor
           strncpy(p2->stimi,$1 + 1, strlen($1) - 2);
           p2->sclass = CONSTANT;
      		  p2->typos = STR;
+          mk_iterable(p2);
           push_vs(p2);
      		  $$=MkNode(astString,p2,NULL,NULL,NULL,NULL);
 
@@ -2002,7 +2138,67 @@ factor
           $$=MkNode(astArrayIndex,p,$1,$3,NULL,NULL);
 
      }
+     | elements {
+
+
+     }
      ;
+
+elements
+    : '[' sequence ']' {
+
+      pop_vs();
+
+      p = new_symbol("");
+      $$=MkNode(astElements,NULL,$2,NULL,NULL,NULL);
+      push_vs(p);
+
+    }
+    ;
+
+sequence
+    : other_elements expr {
+
+        pop_vs();
+        pop_vs();
+
+        p = new_symbol("");
+
+        $$=MkNode(astElementSeq,NULL,$1,$2,NULL,NULL);
+
+        push_vs(p);
+    }
+    | /* EMPTY */ {
+
+        p = new_symbol("");
+
+        $$=MkNode(astEmptyElementSeq,NULL,NULL,NULL,NULL,NULL);
+
+        push_vs(p);
+
+    }
+    ;
+
+other_elements
+    : other_elements expr ',' {
+
+      pop_vs();
+      pop_vs();
+
+      p = new_symbol("");
+
+      $$=MkNode(astOtherElementSeq,NULL,$1,$2,NULL,NULL);
+
+      push_vs(p);
+    }
+    | /* EMPTY */ {
+
+        p = new_symbol("");
+        push_vs(p);
+
+        $$=MkNode(astEmptyOtherElementSeq,NULL,NULL,NULL,NULL,NULL);
+    }
+    ;
 
 incdec
 	 : location INC {
@@ -2081,7 +2277,6 @@ actuals
 	    sprintf(METHOD_NAME_PARS,"%d",p2->typos);
 	    p1 = new_symbol(METHOD_NAME_PARS);
 	    p1->typos = p2->typos;
-
 	    push_vs(p1);
       push_vs(NULL);
 
@@ -2100,7 +2295,6 @@ args
 		   sprintf(METHOD_NAME_PARS,"%d",p2->typos);
 		   p1 = new_symbol(METHOD_NAME_PARS);
 	     p1->typos = p2->typos;
-
 	     push_vs(p1);
 
 		   $$=MkNode(astArgsSeq,NULL,$1,$2,NULL,NULL);
@@ -2119,17 +2313,6 @@ void Init_Hash_Table(void)
 
    for(i=0; i<SYM_TABLE_SIZE; i++)
       ht.table[i]=NULL;
-}
-
-
-void Init_Array_Hash_Table(void)
-{  int i,j;
-
-   for(i=0; i<MAX_SYM_TABLES; i++){
-        for(j=0; j<SYM_TABLE_SIZE; j++){
-            arr_st[i].table[j]=NULL;
-          }
-     }
 }
 
 
@@ -2195,7 +2378,15 @@ symbol *new_symbol(char *name){
    symbp->dcl_ptr = NULL;
    symbp->NextSymbol=NULL;
    symbp->PrevSymbol=NULL;
+   symbp->iterable = 0;
+   symbp->field = 0;
    return(symbp);
+}
+
+void mk_iterable(symbol *symbp){
+
+  symbp->iterable = 1;
+  return;
 }
 
 void add_method_dcl(symbol *symbp)
@@ -2309,62 +2500,111 @@ int mkkey(char *s)
    return (athr % SYM_TABLE_SIZE);
 }
 
-void addsymb(symbol *symbp, int gl)
-{  int i;
-   symbol *p;
+void addsymb(symbol *symbp, int gl){
 
-    if(topOfSt == MAX_SYM_TABLES) {
-			printf("Out of memory :( , the number of methods must be less than %d",MAX_SYM_TABLES); //if the number of methods is greater than MAX_SYM_TABLES constant
-			exit(1);
-			}
+    int i;
+    symbol *p;
 
- if(gl ==1) {
-   i=mkkey(symbp->name);
-   p=ht.table[i];
-   symbp->NextSymbol=p;
-   symbp->PrevSymbol=NULL;
-   symbp->mht= &arr_st[topOfSt];
-   if(p) p->PrevSymbol=symbp;
-   ht.table[i]=symbp;
-   ht.numbsymbols++;
- }else {
+    i=mkkey(symbp->name);
 
-   i=mkkey(symbp->name);
-   p=arr_st[topOfSt].table[i];
-   symbp->NextSymbol=p;
-   symbp->PrevSymbol=NULL;
-   if(p) p->PrevSymbol=symbp;
-   arr_st[topOfSt].table[i]=symbp;
-   arr_st[topOfSt].numbsymbols++;
+   if(gl ==0) {
 
-}
+     //printf("GLOBAL SYMBOL:: %s\n",symbp->name);
 
-}
+     p=ht.table[i];
+     symbp->NextSymbol=p;
+     symbp->PrevSymbol=NULL;
+     if(p) p->PrevSymbol=symbp;
+     ht.table[i]=symbp;
+     ht.numbsymbols++;
 
-symbol *findsymb(char *onoma, int gl)
-{  int i;
-   symbol *p;
-
-   if(gl == 1){
-   i=mkkey(onoma);
-   p=ht.table[i];
-
-   while(p && (strcmp(p->name,onoma) !=0)){
-      p=p->NextSymbol;
-}
-}else {
-    i=mkkey(onoma);
-	 if(topOfSt == MAX_SYM_TABLES) {
-			printf("Out of memory :( , the number of methods must be less than %d",MAX_SYM_TABLES); //if the number of methods is greater than MAX_SYM_TABLES constant
-			exit(1);
-			}
-    p=arr_st[topOfSt].table[i];
-    while(p && (strcmp(p->name,onoma) !=0))
-       p=p->NextSymbol;
-
+     //printf("Global HashTable: %s\n",symbp->name);
 
    }
- return(p);
+   else if(gl ==1 || gl == 2) {
+
+     //printf("LOCAL SYMBOL:: %s\n",symbp->name);
+
+     p= cur_class->mht->table[i];
+     symbp->NextSymbol=p;
+     symbp->PrevSymbol=NULL;
+     if(p) p->PrevSymbol=symbp;
+     cur_class->mht->table[i] = symbp;
+     cur_class->mht->numbsymbols++;
+
+     //printf("Class %s HashTable: %s\n",cur_class->name,symbp->name);
+  }
+  else if(gl ==3) {
+
+    //printf("LOCAL SYMBOL:: %s\n",symbp->name);
+
+    if(cur_func != NULL){
+      p= cur_func->mht->table[i];
+      symbp->NextSymbol=p;
+      symbp->PrevSymbol=NULL;
+      if(p) p->PrevSymbol=symbp;
+      cur_func->mht->table[i] = symbp;
+      cur_func->mht->numbsymbols++;
+
+      //printf("Function %s HashTable: %s\n",cur_func->name,symbp->name);
+   }
+   else if(cur_method != NULL){
+     p= cur_method->mht->table[i];
+     symbp->NextSymbol=p;
+     symbp->PrevSymbol=NULL;
+     if(p) p->PrevSymbol=symbp;
+     cur_method->mht->table[i] = symbp;
+     cur_method->mht->numbsymbols++;
+
+     //printf("Method %s HashTable: %s\n",cur_method->name,symbp->name);
+   }
+ }
+
+}
+
+symbol* findsymb(char *onoma, int gl){
+
+    int i;
+    symbol *p;
+    i=mkkey(onoma);
+
+    //printf("Try to find %s in %d hashtable\n",onoma,gl);
+
+    if(gl == 0){
+
+        p=ht.table[i];
+        while(p && (strcmp(p->name,onoma) !=0))
+              p=p->NextSymbol;
+
+    }
+    else if(gl == 1) {
+
+      p= cur_class->mht->table[i];
+      while(p && (strcmp(p->name,onoma) !=0))
+            p=p->NextSymbol;
+   }
+   else if(gl == 2){
+       p= cur_class->mht->table[i];
+       while(p && (strcmp(p->name,onoma) !=0))
+             p=p->NextSymbol;
+   }
+   else if(gl == 3){
+
+       if(cur_func != NULL){
+           p= cur_func->mht->table[i];
+           while(p && (strcmp(p->name,onoma) !=0))
+                 p=p->NextSymbol;
+       }
+       else if(cur_method != NULL){
+           p= cur_method->mht->table[i];
+           while(p && (strcmp(p->name,onoma) !=0))
+                 p=p->NextSymbol;
+       }
+
+   }
+
+   //if(p == NULL) printf("not found!\n");
+   return(p);
 }
 
 void add_symbols_to_table(symbol *symbp, int gl)
@@ -2374,8 +2614,8 @@ void add_symbols_to_table(symbol *symbp, int gl)
 
       if( !exists )
       {
-         addsymb(symbp,gl);
 
+         addsymb(symbp,gl);
       }
            /* -- exists -- */
       else
@@ -2386,25 +2626,23 @@ void add_symbols_to_table(symbol *symbp, int gl)
 
 }
 
-void discard_symbol(symbol *symbp)
-{
-   if(symbp)
-   {
+void discard_symbol(symbol *symbp){
 
+   if(symbp){
 
       symbp->PrevSymbol->NextSymbol = symbp->NextSymbol;
       symbp->NextSymbol->PrevSymbol = symbp->PrevSymbol;
-	  symbp->PrevSymbol = NULL;
-	  symbp->NextSymbol = NULL;
-
+	    symbp->PrevSymbol = NULL;
+	    symbp->NextSymbol = NULL;
    }
+
 }
 
-void check_assignment(symbol *opnd1, symbol *opnd2)
-{  symbol *p;
+void check_assignment(symbol *opnd1, symbol *opnd2){
 
-   if( !(opnd1->lvalue))
-   {
+   symbol *p;
+
+   if( !(opnd1->lvalue)){
       printf("Error: The left operand must be an lvalue (modifiable)\n");
       exit(1);
    }
@@ -2533,7 +2771,7 @@ void Show_Hash_Table(void)
 
 	for (i=0; i<MAX_SYM_TABLES ;i++){
 		for (j=0; j<SYM_TABLE_SIZE; j++){
-			printf("%s ",arr_st[i].table[j]) ;
+			//printf("%s ",arr_st[i].table[j]) ;
 		}
 		printf("\n");
 	}
@@ -2691,6 +2929,12 @@ int isNumeric (const char * s)
     return *p == '\0';
 }
 
+int startswith(const char *pre, const char *str)
+{
+    size_t lenpre = strlen(pre),
+           lenstr = strlen(str);
+    return lenstr < lenpre ? 0 : strncmp(pre, str, lenpre) == 0;
+}
 
 void yyerror(char *s)
 {

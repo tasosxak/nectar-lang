@@ -1,0 +1,44 @@
+
+pub class Console {
+
+  $shared
+  pub write(msg:str)->bool{
+    say msg;
+    return true;
+  }
+
+  $shared
+  pub write(msg:int)->bool{
+    say msg;
+    return true;
+  }
+
+  $shared
+  pub write(msg:real)->bool{
+    say msg;
+    return true;
+  }
+
+  $shared
+  pub write(msg:bool)->bool{
+      say msg;
+      return true;
+  }
+
+  $shared
+  pub get()->real{
+      var input:real;
+      read "",input;
+
+      return input;
+  }
+
+  $shared
+  pub gets()->str{
+      var input:str;
+      read "",input;
+
+      return input;
+  }
+
+}

@@ -249,14 +249,17 @@ void ProcessClass(AstNode *p,int lev){
   switch(p->SymbolNode->accessor){
 
     case PRIVATE_ACC:
-    fprintf(text,"private class %s.%s extends Object:\n",filename,p->SymbolNode->name);
+    fprintf(text,"private class %s.%s extends %s:\n",filename,p->SymbolNode->name,p->SymbolNode->base_class_name);
     break;
     case PUBLIC_ACC:
-    fprintf(text,"public class %s.%s extends Object:\n",filename,p->SymbolNode->name);
+    fprintf(text,"public class %s.%s extends %s:\n",filename,p->SymbolNode->name,p->SymbolNode->base_class_name);
     break;
-    case ABSTRACT_ACC:
-    fprintf(text,"abstract class %s.%s extends Object:\n",filename,p->SymbolNode->name);
-    break;
+    //case ABSTRACT_ACC:
+    //fprintf(text,"abstract class %s.%s extends %s:\n",filename,p->SymbolNode->name,p->SymbolNode->base_class_name);
+    //break;
+    //case FINAL_ACC:
+    //fprintf(text,"final class %s.%s extends %s:\n",filename,p->SymbolNode->name,p->SymbolNode->base_class_name);
+    //break;
 
   }
 
@@ -306,6 +309,8 @@ void ProcessField(AstNode *p,int lev){
     case STR:
       fprintf(text," S %s;\n",p->SymbolNode->name);
     break;
+    default:
+      fprintf(text," %s %s;\n",p->SymbolNode->nameclass,p->SymbolNode->name);
   }
 
   CodeGeneration(p->pAstNode[0],lev+1,0,0);
@@ -342,6 +347,8 @@ void ProcessAttrs(AstNode *p,int lev){
     case STR:
       fprintf(text," S %s;\n",p->SymbolNode->name);
     break;
+    default:
+      fprintf(text," %s %s;\n",p->SymbolNode->nameclass,p->SymbolNode->name);
   }
 
 }
@@ -430,13 +437,12 @@ void ProcessMethLast(AstNode*p, int lev){
 //Body
 void ProcessBody(AstNode*p, int lev){
    CodeGeneration(p->pAstNode[0],lev+1,0,1);
-   CodeGeneration(p->pAstNode[1],lev+1,0,1);
 }
 
 //Statements
 void ProcessStmtSeq(AstNode*p, int lev){
-   CodeGeneration(p->pAstNode[0],lev+1,0,1);
-   CodeGeneration(p->pAstNode[1],lev+1,0,1);
+   CodeGeneration(p->pAstNode[0],lev+1,1,1);
+   CodeGeneration(p->pAstNode[1],lev+1,1,1);
 }
 /*
 //Library List
@@ -489,6 +495,108 @@ void ProcessExprStmt(AstNode *p, int lev, int lvalue,int leftChild){
 
 }
 
+
+// While Statement
+void ProcessForStmt(AstNode *p, int lev, int lvalue,int leftChild)
+{
+   symbol *lhs, *rhs, *wh;
+   int TEMP_TAG_WHILE;
+   TAG_WHILES++;
+   TEMP_TAG_WHILE= TAG_WHILES;
+
+
+   //Code Generation for the iterable expression
+   CodeGeneration(p->pAstNode[0],lev+1,lvalue,0);
+   rhs=pop_vs();
+
+   switch(rhs->typos){
+
+     case STR:
+        fprintf(text,"v_sconst \"\"\n");
+     break;
+   }
+
+
+   /*Push a symbol to whiles stack, this helps
+    'break' statements to recognize in which while-statement
+   they belong to */
+   if( rhs->sclass == MEMORY ){
+
+       wh = new_symbol("");
+       wh->timi = TEMP_TAG_WHILE;
+       push_wh(wh);
+
+       if(rhs->field == 0){
+           fprintf(text,"sload_ %d\n", rhs->index);
+         }
+       else{
+           fprintf(text,"rload_ 1\n");
+           fprintf(text,"getfield %s\n",rhs->name);
+         }
+
+       //While definition
+       fprintf(text,"label NAME=for%d:\n",TEMP_TAG_WHILE);
+
+       fprintf(text,"try %d :\n",TEMP_TAG_WHILE);
+       fprintf(text,"snext\n");
+       fprintf(text,"sstore_ %d\n",p->SymbolNode->index);
+
+    	 //Code Generation statements in while-loop
+       CodeGeneration(p->pAstNode[1],lev+1,0,0);
+    	 fprintf(text,"jmp for%d\n",TEMP_TAG_WHILE);
+    	 fprintf(text,"except StopIterationException %d :\n", TEMP_TAG_WHILE);
+
+    	 pop_wh();
+     }
+
+    else if( rhs->sclass == STACK ){
+
+        wh = new_symbol("");
+        wh->timi = TEMP_TAG_WHILE;
+        push_wh(wh);
+
+        //While definition
+        fprintf(text,"label NAME=for%d:\n",TEMP_TAG_WHILE);
+
+        fprintf(text,"try %d :\n",TEMP_TAG_WHILE);
+        fprintf(text,"snext\n");
+        fprintf(text,"sstore_ %d\n",p->SymbolNode->index);
+
+        //Code Generation statements in while-loop
+        CodeGeneration(p->pAstNode[1],lev+1,0,0);
+        fprintf(text,"jmp for%d\n",TEMP_TAG_WHILE);
+        fprintf(text,"except StopIterationException %d :\n", TEMP_TAG_WHILE);
+
+      	 pop_wh();
+       }
+  else /* --- CONSTANT --- */
+  {
+     if( strlen(rhs->stimi) > 0 )
+     {
+           wh = new_symbol("");
+           wh->timi = TEMP_TAG_WHILE;
+           push_wh(wh);
+
+          fprintf(text,"sconst \"%s\"\n", rhs->stimi);
+           //While definition
+           fprintf(text,"label NAME=for%d:\n",TEMP_TAG_WHILE);
+
+           fprintf(text,"try %d :\n",TEMP_TAG_WHILE);
+           fprintf(text,"snext\n");
+           fprintf(text,"sstore_ %d\n",p->SymbolNode->index);
+
+          //Code Generation statements in while-loop
+           CodeGeneration(p->pAstNode[1],lev+1,0,0);
+          fprintf(text,"jmp for%d\n",TEMP_TAG_WHILE);
+          fprintf(text,"except StopIterationException %d :\n", TEMP_TAG_WHILE);
+
+          pop_wh();
+     }
+
+   }
+
+}
+
 // While Statement
 void ProcessWhileStmt(AstNode *p, int lev, int lvalue,int leftChild)
 {
@@ -519,8 +627,14 @@ void ProcessWhileStmt(AstNode *p, int lev, int lvalue,int leftChild)
        wh = new_symbol("");
        wh->timi = TEMP_TAG_WHILE;
        push_wh(wh);
+       if(rhs->field == 0){
+           fprintf(text,"iload_ %d\n", rhs->index);
+         }
+       else{
+           fprintf(text,"rload_ 1\n");
+           fprintf(text,"getfield %s\n",rhs->name);
+        }
 
-    	 fprintf(text,"iload_ %d\n", rhs->index);
        fprintf(text,"ifzero endwhile%d\n",TEMP_TAG_WHILE);
 
     	 //Code Generation statements in while-loop
@@ -618,7 +732,14 @@ void ProcessTimesStmt(AstNode *p, int lev, int lvalue,int leftChild)
 	   //fprintf(data,"COUNTER_%d dd  %d\n",TEMP_TAG_WHILE,lhs->timi);
 		 //fprintf(text,"mov ecx,[COUNTER_%d]\n",TEMP_TAG_WHILE);
 		// fprintf(text,"mov ecx, [%s]\n",lhs->pseudonym);
-     fprintf(text,"iload_ %d\n", lhs->index);
+    if(lhs->field == 0){
+        fprintf(text,"iload_ %d\n", lhs->index);
+      }
+    else{
+        fprintf(text,"rload_ 1\n");
+        fprintf(text,"getfield %s\n",lhs->name);
+      }
+
 		 //While definition
 		 fprintf(text,"label NAME=while%d:\n",TEMP_TAG_WHILE);
 
@@ -722,7 +843,14 @@ void ProcessTimesStmt(AstNode *p, int lev, int lvalue,int leftChild)
      TAG_IFS++;
 		 TEMP_TAG_IF = TAG_IFS;
 
-     fprintf(text,"iload_ %d\n", lhs->index);
+     if(lhs->field == 0){
+          fprintf(text,"iload_ %d\n", lhs->index);
+       }
+     else{
+         fprintf(text,"rload_ 1\n");
+         fprintf(text,"getfield %s\n",lhs->name);
+       }
+
 		 fprintf(text,"ifzero endif%d\n",TEMP_TAG_IF);
 
 		 //Code Generation for true
@@ -732,7 +860,7 @@ void ProcessTimesStmt(AstNode *p, int lev, int lvalue,int leftChild)
 		 fprintf(text,"label NAME=endif%d:\n",TEMP_TAG_IF);
 
    }
-   else if( lhs->sclass == MEMORY ){
+   else if( lhs->sclass == STACK ){
 
       TAG_IFS++;
  		 TEMP_TAG_IF = TAG_IFS;
@@ -780,7 +908,15 @@ void ProcessTimesStmt(AstNode *p, int lev, int lvalue,int leftChild)
 		  TAG_IFS++;
 		  TEMP_TAG_IF = TAG_IFS;
 
-      fprintf(text,"iload_ %d\n", lhs->index);
+      if(lhs->field == 0){
+           fprintf(text,"iload_ %d\n", lhs->index);
+        }
+      else{
+          fprintf(text,"rload_ 1\n");
+          fprintf(text,"getfield %s\n",lhs->name);
+        }
+
+
 		 // fprintf(text,"mov ecx,[%s]\n",lhs->pseudonym);
 		  fprintf(text,"ifzero else%d\n",TEMP_TAG_IF);
 
@@ -852,7 +988,14 @@ void ProcessTimesStmt(AstNode *p, int lev, int lvalue,int leftChild)
 		  TAG_IFS++;
 		  TEMP_TAG_IF = TAG_IFS;
 
-      fprintf(text,"iload_ %d\n", lhs->index);
+      if(lhs->field == 0){
+           fprintf(text,"iload_ %d\n", lhs->index);
+        }
+      else{
+          fprintf(text,"rload_ 1\n");
+          fprintf(text,"getfield %s\n",lhs->name);
+        }
+
 		  //fprintf(text,"mov ecx,[%s]\n",lhs->pseudonym);
 		  fprintf(text,"ifzero endif%d\n",TEMP_TAG_IF);
 
@@ -910,7 +1053,14 @@ void ProcessTimesStmt(AstNode *p, int lev, int lvalue,int leftChild)
 		  TAG_IFS++;
 		  TEMP_TAG_IF = TAG_IFS;
 
-		  fprintf(text,"iload_ %d\n", lhs->index);
+      if(lhs->field == 0){
+           fprintf(text,"iload_ %d\n", lhs->index);
+        }
+      else{
+          fprintf(text,"rload_ 1\n");
+          fprintf(text,"getfield %s\n",lhs->name);
+      }
+
 		  //fprintf(text,"cmp ecx,0\n");
 		  fprintf(text,"ifnotzero endif%d\n",TEMP_TAG_IF);
 
@@ -974,25 +1124,63 @@ void ProcessAssign(AstNode*p, int lev,int leftChild){
 							 switch(rhs->typos){
 
 									case INT:
-											 if(rhs->sclass == MEMORY){
 
-													if( strcmp(lhs->pseudonym,rhs->pseudonym) != 0 ) {
+											   if(rhs->sclass == MEMORY){
 
-														fprintf(text,"iload_ %d\n",rhs->index);
-														fprintf(text,"istore_ %d\n",lhs->index);
+      													if( strcmp(lhs->pseudonym,rhs->pseudonym) != 0 ) {
 
-													}
+
+                                  if(lhs->field == 0){
+                                      if(rhs->field == 0){
+                                        fprintf(text,"iload_ %d\n",rhs->index);
+                                      }
+                                      else {
+                                        fprintf(text,"rload_ 1\n");
+                                        fprintf(text,"getfield %s\n",rhs->name);
+                                      }
+
+      														    fprintf(text,"istore_ %d\n",lhs->index);
+                                    }
+                                  else{
+                                      if(rhs->field == 0){
+                                        fprintf(text,"iload_ %d\n",rhs->index);
+                                      }
+                                      else {
+                                        fprintf(text,"rload_ 1\n");
+                                        fprintf(text,"getfield %s\n",rhs->name);
+                                      }
+
+                                      fprintf(text,"rload_ 1\n");
+                                      fprintf(text,"putfield %s\n",lhs->name);
+                                    }
+
+
+      													}
 
 												 }
-                        else if(rhs->sclass == STACK){
+                         else if(rhs->sclass == STACK){
 
-  														fprintf(text,"istore_ %d\n",lhs->index);
+                              if(lhs->field == 0){
+                                  fprintf(text,"istore_ %d\n",lhs->index);
+                                }
+                              else{
+                                  fprintf(text,"rload_ 1\n");
+                                  fprintf(text,"putfield %s\n",lhs->name);
+                                }
 
   												 }
-											 else if(rhs->sclass == CONSTANT) {
+											   else if(rhs->sclass == CONSTANT) {
 
-													fprintf(text,"iconst %d\n",rhs->timi);
-													fprintf(text,"istore_ %d\n",lhs->index);
+                           if(lhs->field == 0){
+                                  fprintf(text,"iconst %d\n",rhs->timi);
+                                  fprintf(text,"istore_ %d\n",lhs->index);
+                             }
+                           else{
+                               fprintf(text,"iconst %d\n",rhs->timi);
+                               fprintf(text,"rload_ 1\n");
+                               fprintf(text,"putfield %s\n",lhs->name);
+                             }
+
 
 
 												 }
@@ -1000,12 +1188,33 @@ void ProcessAssign(AstNode*p, int lev,int leftChild){
 									case REAL:
 													 if(rhs->sclass == MEMORY){
 
-                             fprintf(text,"dload_ %d\n",rhs->index);
-                             fprintf(text,"d2i\n");
-                             fprintf(text,"istore_ %d\n",lhs->index);
+                             if(lhs->field == 0){
+                                 if(rhs->field == 0){
+                                   fprintf(text,"dload_ %d\n",rhs->index);
+                                 }
+                                 else {
+                                   fprintf(text,"rload_ 1\n");
+                                   fprintf(text,"getfield %s\n",rhs->name);
+                                 }
+                                 fprintf(text,"d2i\n");
+                                 fprintf(text,"istore_ %d\n",lhs->index);
+                               }
+                             else{
+                                 if(rhs->field == 0){
+                                   fprintf(text,"dload_ %d\n",rhs->index);
+                                 }
+                                 else {
+                                   fprintf(text,"rload_ 1\n");
+                                   fprintf(text,"getfield %s\n",rhs->name);
+                                 }
+
+                                 fprintf(text,"d2i\n");
+                                 fprintf(text,"rload_ 1\n");
+                                 fprintf(text,"putfield %s\n",lhs->name);
+                               }
 
 														 }
-                            else if(rhs->sclass == STACK){
+                           else if(rhs->sclass == STACK){
 
                                fprintf(text,"d2i\n");
                                fprintf(text,"istore_ %d\n",lhs->index);
@@ -1032,9 +1241,30 @@ void ProcessAssign(AstNode*p, int lev,int leftChild){
 
                           if(rhs->sclass == MEMORY){
 
-                               fprintf(text,"iload_ %d\n",rhs->index);
-                               fprintf(text,"i2d\n");
-                               fprintf(text,"dstore_ %d\n",lhs->index);
+                            if(lhs->field == 0){
+                                if(rhs->field == 0){
+                                  fprintf(text,"iload_ %d\n",rhs->index);
+                                }
+                                else {
+                                  fprintf(text,"rload_ 1\n");
+                                  fprintf(text,"getfield %s\n",rhs->name);
+                                }
+                                fprintf(text,"i2d\n");
+                                fprintf(text,"dstore_ %d\n",lhs->index);
+                              }
+                            else{
+                                if(rhs->field == 0){
+                                  fprintf(text,"iload_ %d\n",rhs->index);
+                                }
+                                else {
+                                  fprintf(text,"rload_ 1\n");
+                                  fprintf(text,"getfield %s\n",rhs->name);
+                                }
+
+                                fprintf(text,"i2d\n");
+                                fprintf(text,"rload_ 1\n");
+                                fprintf(text,"putfield %s\n",lhs->name);
+                              }
 
                             }
                           else if(rhs->sclass == STACK){
@@ -1057,8 +1287,32 @@ void ProcessAssign(AstNode*p, int lev,int leftChild){
 
                              if( strcmp(lhs->pseudonym,rhs->pseudonym) != 0 ) {
 
-                               fprintf(text,"dload_ %d\n",rhs->index);
-                               fprintf(text,"dstore_ %d\n",lhs->index);
+
+                                 if(lhs->field == 0){
+                                     if(rhs->field == 0){
+                                       fprintf(text,"dload_ %d\n",rhs->index);
+                                     }
+                                     else {
+                                       fprintf(text,"rload_ 1\n");
+                                       fprintf(text,"getfield %s\n",rhs->name);
+                                     }
+
+                                     fprintf(text,"dstore_ %d\n",lhs->index);
+                                   }
+                                 else{
+                                     if(rhs->field == 0){
+                                       fprintf(text,"dload_ %d\n",rhs->index);
+                                     }
+                                     else {
+                                       fprintf(text,"rload_ 1\n");
+                                       fprintf(text,"getfield %s\n",rhs->name);
+                                     }
+
+                                     fprintf(text,"rload_ 1\n");
+                                     fprintf(text,"putfield %s\n",lhs->name);
+                                   }
+
+
 
                              }
 
@@ -1099,8 +1353,29 @@ void ProcessAssign(AstNode*p, int lev,int leftChild){
 
                        if( strcmp(lhs->pseudonym,rhs->pseudonym) != 0 ) {
 
-                         fprintf(text,"iload_ %d\n",rhs->index);
-                         fprintf(text,"istore_ %d\n",lhs->index);
+                         if(lhs->field == 0){
+                             if(rhs->field == 0){
+                               fprintf(text,"iload_ %d\n",rhs->index);
+                             }
+                             else {
+                               fprintf(text,"rload_ 1\n");
+                               fprintf(text,"getfield %s\n",rhs->name);
+                             }
+
+                             fprintf(text,"istore_ %d\n",lhs->index);
+                           }
+                         else{
+                             if(rhs->field == 0){
+                               fprintf(text,"iload_ %d\n",rhs->index);
+                             }
+                             else {
+                               fprintf(text,"rload_ 1\n");
+                               fprintf(text,"getfield %s\n",rhs->name);
+                             }
+
+                             fprintf(text,"rload_ 1\n");
+                             fprintf(text,"putfield %s\n",lhs->name);
+                           }
 
                        }
 
@@ -1122,8 +1397,155 @@ void ProcessAssign(AstNode*p, int lev,int leftChild){
 					   }
 
 					break;
+          case STR:
+
+               switch(rhs->typos){
+
+                  case STR:
+
+                         if(rhs->sclass == MEMORY){
+
+                                if( strcmp(lhs->pseudonym,rhs->pseudonym) != 0 ) {
+
+                                  if(lhs->field == 0){
+                                      if(rhs->field == 0){
+                                        fprintf(text,"sload_ %d\n",rhs->index);
+                                      }
+                                      else {
+                                        fprintf(text,"rload_ 1\n");
+                                        fprintf(text,"getfield %s\n",rhs->name);
+                                      }
+
+      														    fprintf(text,"sstore_ %d\n",lhs->index);
+                                    }
+                                  else{
+                                      if(rhs->field == 0){
+                                        fprintf(text,"sload_ %d\n",rhs->index);
+                                      }
+                                      else {
+                                        fprintf(text,"rload_ 1\n");
+                                        fprintf(text,"getfield %s\n",rhs->name);
+                                      }
+
+                                      fprintf(text,"rload_ 1\n");
+                                      fprintf(text,"putfield %s\n",lhs->name);
+                                    }
+
+                                }
+
+                         }
+                         else if(rhs->sclass == STACK){
+
+                              fprintf(text,"sstore_ %d\n",lhs->index);
+
+                           }
+                         else if(rhs->sclass == CONSTANT) {
+
+                          fprintf(text,"sconst \"%s\"\n",rhs->stimi);
+                          fprintf(text,"sstore_ %d\n",lhs->index);
+
+
+                         }
+                  break;
+                  case INT:
+                      printf("Error: bad operand types for binary operator \n");
+                      exit(1);
+                  break;
+                  case REAL:
+                      printf("Error: bad operand types for binary operator \n");
+                      exit(1);
+                  break;
+                  case BOOL:
+                      printf("Error: bad operand types for binary operator \n");
+                      exit(1);
+                  break;
+               }
+          break;
+          default:
+
+               switch(rhs->typos){
+
+                  case INT:
+                      printf("Error: bad operand types for binary operator \n");
+                      exit(1);
+                  break;
+                  case REAL:
+                      printf("Error: bad operand types for binary operator \n");
+                      exit(1);
+                  break;
+                  case BOOL:
+                      printf("Error: bad operand types for binary operator \n");
+                      exit(1);
+                  break;
+                  case STR:
+                      printf("Error: bad operand types for binary operator \n");
+                      exit(1);
+                  break;
+                  default:
+
+                         if(rhs->sclass == MEMORY){
+
+                                if( strcmp(lhs->pseudonym,rhs->pseudonym) != 0 ) {
+
+                                  if(lhs->field == 0){
+                                      if(rhs->field == 0){
+                                        fprintf(text,"rload_ %d\n",rhs->index);
+                                      }
+                                      else {
+                                        fprintf(text,"rload_ 1\n");
+                                        fprintf(text,"getfield %s\n",rhs->name);
+                                      }
+
+      														    fprintf(text,"rstore_ %d\n",lhs->index);
+                                    }
+                                  else{
+                                      if(rhs->field == 0){
+                                        fprintf(text,"rload_ %d\n",rhs->index);
+                                      }
+                                      else {
+                                        fprintf(text,"rload_ 1\n");
+                                        fprintf(text,"getfield %s\n",rhs->name);
+                                      }
+
+                                      fprintf(text,"rload_ 1\n");
+                                      fprintf(text,"putfield %s\n",lhs->name);
+                                    }
+
+                                }
+
+                         }
+                         else if(rhs->sclass == STACK){
+
+                           if(lhs->field == 0){
+
+                               fprintf(text,"rstore_ %d\n",lhs->index);
+                             }
+                           else{
+
+                               fprintf(text,"rload_ 1\n");
+                               fprintf(text,"putfield %s\n",lhs->name);
+                             }
+
+                           }
+                         else if(rhs->sclass == CONSTANT) {
+
+                           if(lhs->field == 0){
+
+                               fprintf(text,"rstore_ %d\n",lhs->index);
+                             }
+                           else{
+
+                               fprintf(text,"rload_ 1\n");
+                               fprintf(text,"putfield %s\n",lhs->name);
+                             }
+
+
+                         }
+                break;
+               }
+          break;
 			    }
-		  break;
+      break;
 		  case CONSTANT:
 			 fprintf(text,"ERROR ASSIGN[CONSTANT-]");
 		  break;
@@ -1289,6 +1711,10 @@ void ProcessAddAssign(AstNode*p, int lev,int leftChild){
 									printf("Error: bad operand types for binary operator \n");
 									exit(1);
 								break;
+                case STR:
+                  printf("Error: bad operand types for binary operator \n");
+                  exit(1);
+                break;
 							}
 					break;
 					case REAL:
@@ -1351,6 +1777,32 @@ void ProcessAddAssign(AstNode*p, int lev,int leftChild){
                            }
 									break;
                   case STR:
+                    printf("Error: bad operand types for binary operator \n");
+                    exit(1);
+									break;
+									case BOOL:
+										printf("Error: bad operand types for binary operator \n");
+										exit(1);
+									break;
+								}
+					break;
+					case BOOL:
+							printf("Error: bad operand types for binary operator \n");
+							exit(1);
+					break;
+          case STR:
+
+						switch(rhs->typos){
+
+									case INT:
+                      printf("Error: bad operand types for binary operator \n");
+                      exit(1);
+									break;
+									case REAL:
+                      printf("Error: bad operand types for binary operator \n");
+                      exit(1);
+									break;
+                  case STR:
 
                       if(rhs->sclass == MEMORY){
 
@@ -1381,10 +1833,6 @@ void ProcessAddAssign(AstNode*p, int lev,int leftChild){
 										exit(1);
 									break;
 								}
-					break;
-					case BOOL:
-							printf("Error: bad operand types for binary operator \n");
-							exit(1);
 					break;
 				}
 		  break;
@@ -1585,7 +2033,7 @@ void ProcessSubAssign(AstNode*p, int lev,int leftChild){
 }
 
 //Increase after
-void ProcessIncreaseAfter(AstNode* p, int lev, int leftChild){
+void ProcessIncreaseAfter(AstNode* p, int lev, int lvalue,int leftChild){
 
 	symbol *lhs;
 
@@ -1605,12 +2053,16 @@ void ProcessIncreaseAfter(AstNode* p, int lev, int leftChild){
 
 	}
 
+  if(lvalue){
+    fprintf(text,"pop\n");
+  }
+
 	push_vs(lhs);
 
 }
 
 //Increase Before
-void ProcessIncreaseBefore(AstNode* p, int lev, int leftChild){
+void ProcessIncreaseBefore(AstNode* p, int lev,int lvalue, int leftChild){
 
 	symbol *lhs;
 
@@ -1629,12 +2081,16 @@ void ProcessIncreaseBefore(AstNode* p, int lev, int leftChild){
 
   	}
 
+    if(lvalue){
+      fprintf(text,"pop\n");
+    }
+
 	push_vs(lhs);
 
 }
 
 //Decrease after
-void ProcessDecreaseAfter(AstNode* p, int lev, int leftChild){
+void ProcessDecreaseAfter(AstNode* p, int lev,int lvalue, int leftChild){
 
 	symbol *lhs;
 
@@ -1653,13 +2109,16 @@ void ProcessDecreaseAfter(AstNode* p, int lev, int leftChild){
 
 	}
 
+  if(lvalue){
+    fprintf(text,"pop\n");
+  }
 	push_vs(lhs);
 
 }
 
 
 //Decrease Before
-void ProcessDecreaseBefore(AstNode* p, int lev, int leftChild){
+void ProcessDecreaseBefore(AstNode* p, int lev,int lvalue, int leftChild){
 
 	symbol *lhs;
 
@@ -1676,6 +2135,10 @@ void ProcessDecreaseBefore(AstNode* p, int lev, int leftChild){
     fprintf(text,"dup 2\n");
     fprintf(text,"istore_ %d\n", lhs->index);
 
+  }
+
+  if(lvalue){
+    fprintf(text,"pop\n");
   }
 
 	push_vs(lhs);
@@ -1965,7 +2428,7 @@ void ProcessListedAssign(AstNode*p, int lev,int leftChild){
 
 									if(rhs->sclass == MEMORY){
 
-										fprintf(text,"push dword [%s]\n",rhs->pseudonym);
+										fprintf(text,"iload_ %d\n",rhs->index);
 
 										}
 
@@ -1974,58 +2437,31 @@ void ProcessListedAssign(AstNode*p, int lev,int leftChild){
 										fprintf(text,"iconst %d\n",rhs->timi);
 
 										}
-
-									else if(rhs->sclass == REGISTER){
-
-										fprintf(text,"mov dword [rgs]\n");
-
-									}
-									else {  /*---- STACK ---*/
-
-											fprintf(text,"ERROR ASSIGN[MEMORY-STACK]");
-									}
-
 							break;
 							case REAL:
 
 									r_types[R_TYPES_COUNTER++] = REAL;
 
-									fprintf(text,"sub esp,8\n");
 
 									if(rhs->sclass == MEMORY){
 
-										fprintf(text,"fld qword [%s]\n",rhs->pseudonym);
-										fprintf(text,"fstp qword [esp]\n");
+										fprintf(text,"dload_ %d\n",rhs->index);
 
 										}
 
 									else if(rhs->sclass == CONSTANT) {
 
-										fprintf(data,"REAL_%d dq %lf\n",NUM_OF_REAL_CONST,rhs->dtimi);
-										fprintf(text,"fld qword [REAL_%d]\n",NUM_OF_REAL_CONST++);
-										fprintf(text,"fstp qword [esp]\n");
+										fprintf(text,"dconst %lf\n",rhs->dtimi);
 
 
 									}
-									else if(rhs->sclass == REGISTER){
-
-										fprintf(text,"fld qword [frgs]\n");
-										fprintf(text,"fstp qword [esp]\n");
-
-									}
-									else {  /*---- STACK ---*/
-
-											fprintf(text,"ERROR ASSIGN[MEMORY-STACK]");
-									}
-
-
 							break;
 							case BOOL:
 									r_types[R_TYPES_COUNTER++] = BOOL;
 
-									if(rhs->sclass == MEMORY){
+                  if(rhs->sclass == MEMORY){
 
-										fprintf(text,"push dword [%s]\n",rhs->pseudonym);
+										fprintf(text,"iload_ %d\n",rhs->index);
 
 										}
 
@@ -2035,15 +2471,21 @@ void ProcessListedAssign(AstNode*p, int lev,int leftChild){
 
 										}
 
-									else if(rhs->sclass == REGISTER){
+							break;
+              case STR:
+									r_types[R_TYPES_COUNTER++] = STR;
 
-										fprintf(text,"mov dword [rgs]\n");
+                  if(rhs->sclass == MEMORY){
 
-									}
-									else {  /*---- STACK ---*/
+										fprintf(text,"sload_ %d\n",rhs->index);
 
-											fprintf(text,"ERROR ASSIGN[MEMORY-STACK]");
-									}
+										}
+
+									else if(rhs->sclass == CONSTANT) {
+
+										fprintf(text,"sconst %s\n",rhs->stimi);
+
+										}
 
 							break;
 					 }
@@ -2075,18 +2517,14 @@ void ProcessListedAssign(AstNode*p, int lev,int leftChild){
 						switch(r_types[R_TYPES_COUNTER--]){
 
 							case INT:
-								fprintf(text, "pop  eax\n");
-								fprintf(text, "mov  dword [%s], eax\n",  assigns[i]->pseudonym);
+								fprintf(text, "istore_ %d\n",  assigns[i]->index);
 							break;
 							case REAL:
-								printf("Προσοχή: Ο τύπος της μεταβλητής '%s' δεν είναι 'real'\n",assigns[i]->name);
-								fprintf(text, "fld qword [esp]\n");
-								fprintf(text, "add  esp,8\n");
-								//fprintf(text,"fldcw [cw]\n");
-								fprintf(text, "fistp dword [%s]\n",  assigns[i]->pseudonym);
-
+                fprintf(text,"d2i\n");
+								fprintf(text, "istore_ %d\n",  assigns[i]->index);
 							break;
 							case BOOL:
+              case STR:
 								printf("Error: bad operand types for binary operator \n");
 								exit(1);
 							break;
@@ -2099,18 +2537,14 @@ void ProcessListedAssign(AstNode*p, int lev,int leftChild){
 					switch(r_types[R_TYPES_COUNTER--]){
 
 								case INT:
-									fprintf(text, "fild dword [esp]\n");
-									fprintf(text, "add  esp,4\n");
-									fprintf(text, "fstp qword [%s]\n",  assigns[i]->pseudonym);
+                    fprintf(text,"i2d\n");
+									  fprintf(text, "dstore_ %d\n",  assigns[i]->index);
 								break;
 								case REAL:
-
-									fprintf(text, "fld qword [esp]\n");
-									fprintf(text, "add  esp,8\n");
-									fprintf(text, "fstp qword [%s]\n",  assigns[i]->pseudonym);
-
+									fprintf(text, "dstore_ %d\n",  assigns[i]->index);
 								break;
 								case BOOL:
+                case STR:
 									printf("Error: bad operand types for binary operator \n");
 									exit(1);
 								break;
@@ -2122,8 +2556,7 @@ void ProcessListedAssign(AstNode*p, int lev,int leftChild){
 						switch(r_types[R_TYPES_COUNTER--]){
 
 							case BOOL:
-								fprintf(text, "pop  eax\n");
-								fprintf(text, "mov  dword [%s], eax\n",  assigns[i]->pseudonym);
+								fprintf(text, "istore_ %d\n",  assigns[i]->index);
 							break;
 							case REAL:
 								printf("Error: bad operand types for binary operator \n");
@@ -2135,7 +2568,22 @@ void ProcessListedAssign(AstNode*p, int lev,int leftChild){
 							break;
 
 						}
+				break;
+        case STR:
 
+						switch(r_types[R_TYPES_COUNTER--]){
+
+              case STR:
+                fprintf(text, "sstore_ %d\n",  assigns[i]->index);
+              break;
+							case BOOL:
+							case REAL:
+							case INT:
+								printf("Error: bad operand types for binary operator \n");
+								exit(1);
+							break;
+
+						}
 				break;
 
 
@@ -2178,111 +2626,90 @@ void ProcessNestedAssign(AstNode*p, int lev,int leftChild){
 
 
    switch(lhs->sclass)
-	   {
-		  case MEMORY:
+    {
+     case MEMORY:
 
-					 switch(rhs->typos){
+          switch(rhs->typos){
 
-							case INT:
-									r_types[R_TYPES_COUNTER++] = INT;
+             case INT:
+                 r_types[R_TYPES_COUNTER++] = INT;
 
-									if(rhs->sclass == MEMORY){
+                 if(rhs->sclass == MEMORY){
 
-										fprintf(text,"push dword [%s]\n",rhs->pseudonym);
+                   fprintf(text,"iload_ %d\n",rhs->index);
 
-										}
+                   }
 
-									else if(rhs->sclass == CONSTANT) {
+                 else if(rhs->sclass == CONSTANT) {
 
-										fprintf(text,"iconst %d\n",rhs->timi);
+                   fprintf(text,"iconst %d\n",rhs->timi);
 
-										}
+                   }
+             break;
+             case REAL:
 
-									else if(rhs->sclass == REGISTER){
-
-										fprintf(text,"mov dword [rgs]\n");
-
-									}
-									else {  /*---- STACK ---*/
-
-											fprintf(text,"ERROR ASSIGN[MEMORY-STACK]");
-									}
-
-							break;
-							case REAL:
-
-									r_types[R_TYPES_COUNTER++] = REAL;
-
-									fprintf(text,"sub esp,8\n");
-
-									if(rhs->sclass == MEMORY){
-
-										fprintf(text,"fld qword [%s]\n",rhs->pseudonym);
-										fprintf(text,"fstp qword [esp]\n");
-
-										}
-
-									else if(rhs->sclass == CONSTANT) {
-
-										fprintf(data,"REAL_%d dq %lf\n",NUM_OF_REAL_CONST,rhs->dtimi);
-										fprintf(text,"fld qword [REAL_%d]\n",NUM_OF_REAL_CONST++);
-										fprintf(text,"fstp qword [esp]\n");
+                 r_types[R_TYPES_COUNTER++] = REAL;
 
 
-									}
-									else if(rhs->sclass == REGISTER){
+                 if(rhs->sclass == MEMORY){
 
-										fprintf(text,"fld qword [frgs]\n");
-										fprintf(text,"fstp qword [esp]\n");
+                   fprintf(text,"dload_ %d\n",rhs->index);
 
-									}
-									else {  /*---- STACK ---*/
+                   }
 
-											fprintf(text,"ERROR ASSIGN[MEMORY-STACK]");
-									}
+                 else if(rhs->sclass == CONSTANT) {
+
+                   fprintf(text,"dconst %lf\n",rhs->dtimi);
 
 
-							break;
-							case BOOL:
-									r_types[R_TYPES_COUNTER++] = BOOL;
+                 }
+             break;
+             case BOOL:
+                 r_types[R_TYPES_COUNTER++] = BOOL;
 
-									if(rhs->sclass == MEMORY){
+                  if(rhs->sclass == MEMORY){
 
-										fprintf(text,"push dword [%s]\n",rhs->pseudonym);
+                   fprintf(text,"iload_ %d\n",rhs->index);
 
-										}
+                   }
 
-									else if(rhs->sclass == CONSTANT) {
+                 else if(rhs->sclass == CONSTANT) {
 
-										fprintf(text,"push %d\n",rhs->timi);
+                   fprintf(text,"iconst %d\n",rhs->timi);
 
-										}
+                   }
 
-									else if(rhs->sclass == REGISTER){
+             break;
+              case STR:
+                 r_types[R_TYPES_COUNTER++] = STR;
 
-										fprintf(text,"mov dword [rgs]\n");
+                  if(rhs->sclass == MEMORY){
 
-									}
-									else {  /*---- STACK ---*/
+                   fprintf(text,"sload_ %d\n",rhs->index);
 
-											fprintf(text,"ERROR ASSIGN[MEMORY-STACK]");
-									}
+                   }
 
-							break;
-					 }
+                 else if(rhs->sclass == CONSTANT) {
 
-				  break;
-				  case CONSTANT:
-					 fprintf(text,"ERROR ASSIGN[CONSTANT-]");
-				  break;
-				  case REGISTER:
-					 fprintf(text,"ERROR ASSIGN[REGISTER-]");
-				  break;
-				  case STACK:
-					 fprintf(text,"ERROR ASSIGN[STACK-]");
-				  break;
+                   fprintf(text,"sconst %s\n",rhs->stimi);
 
-	   }
+                   }
+
+             break;
+          }
+
+         break;
+         case CONSTANT:
+          fprintf(text,"ERROR ASSIGN[CONSTANT-]");
+         break;
+         case REGISTER:
+          fprintf(text,"ERROR ASSIGN[REGISTER-]");
+         break;
+         case STACK:
+          fprintf(text,"ERROR ASSIGN[STACK-]");
+         break;
+
+    }
 
 
 }
@@ -2302,114 +2729,91 @@ void ProcessEmbedAssign(AstNode*p, int lev,int leftChild){
    CodeGeneration(p->pAstNode[1],lev+1,0,0);
    rhs = pop_vs();
 
+   switch(lhs->sclass)
+    {
+     case MEMORY:
+
+          switch(rhs->typos){
+
+             case INT:
+                 r_types[R_TYPES_COUNTER++] = INT;
+
+                 if(rhs->sclass == MEMORY){
+
+                   fprintf(text,"iload_ %d\n",rhs->index);
+
+                   }
+
+                 else if(rhs->sclass == CONSTANT) {
+
+                   fprintf(text,"iconst %d\n",rhs->timi);
+
+                   }
+             break;
+             case REAL:
+
+                 r_types[R_TYPES_COUNTER++] = REAL;
 
 
-    switch(lhs->sclass)
-	   {
-		  case MEMORY:
+                 if(rhs->sclass == MEMORY){
 
-					 switch(rhs->typos){
+                   fprintf(text,"dload_ %d\n",rhs->index);
 
-							case INT:
-									r_types[R_TYPES_COUNTER++] = INT;
+                   }
 
-									if(rhs->sclass == MEMORY){
+                 else if(rhs->sclass == CONSTANT) {
 
-										fprintf(text,"push dword [%s]\n",rhs->pseudonym);
-
-										}
-
-									else if(rhs->sclass == CONSTANT) {
-
-										fprintf(text,"push %d\n",rhs->timi);
-
-										}
-
-									else if(rhs->sclass == REGISTER){
-
-										fprintf(text,"mov dword [rgs]\n");
-
-									}
-									else {  /*---- STACK ---*/
-
-											fprintf(text,"ERROR ASSIGN[MEMORY-STACK]");
-									}
-
-							break;
-							case REAL:
-
-									r_types[R_TYPES_COUNTER++] = REAL;
-
-									fprintf(text,"sub esp,8\n");
-
-									if(rhs->sclass == MEMORY){
-
-										fprintf(text,"fld qword [%s]\n",rhs->pseudonym);
-										fprintf(text,"fstp qword [esp]\n");
-
-										}
-
-									else if(rhs->sclass == CONSTANT) {
-
-										fprintf(data,"REAL_%d dq %lf\n",NUM_OF_REAL_CONST,rhs->dtimi);
-										fprintf(text,"fld qword [REAL_%d]\n",NUM_OF_REAL_CONST++);
-										fprintf(text,"fstp qword [esp]\n");
+                   fprintf(text,"dconst %lf\n",rhs->dtimi);
 
 
-									}
-									else if(rhs->sclass == REGISTER){
+                 }
+             break;
+             case BOOL:
+                 r_types[R_TYPES_COUNTER++] = BOOL;
 
-										fprintf(text,"fld qword [frgs]\n");
-										fprintf(text,"fstp qword [esp]\n");
+                  if(rhs->sclass == MEMORY){
 
-									}
-									else {  /*---- STACK ---*/
+                   fprintf(text,"iload_ %d\n",rhs->index);
 
-											fprintf(text,"ERROR ASSIGN[MEMORY-STACK]");
-									}
+                   }
 
+                 else if(rhs->sclass == CONSTANT) {
 
-							break;
-							case BOOL:
-									r_types[R_TYPES_COUNTER++] = BOOL;
+                   fprintf(text,"iconst %d\n",rhs->timi);
 
-									if(rhs->sclass == MEMORY){
+                   }
 
-										fprintf(text,"push dword [%s]\n",rhs->pseudonym);
+             break;
+              case STR:
+                 r_types[R_TYPES_COUNTER++] = STR;
 
-										}
+                  if(rhs->sclass == MEMORY){
 
-									else if(rhs->sclass == CONSTANT) {
+                   fprintf(text,"sload_ %d\n",rhs->index);
 
-										fprintf(text,"push %d\n",rhs->timi);
+                   }
 
-										}
+                 else if(rhs->sclass == CONSTANT) {
 
-									else if(rhs->sclass == REGISTER){
+                   fprintf(text,"sconst %s\n",rhs->stimi);
 
-										fprintf(text,"mov dword [rgs]\n");
+                   }
 
-									}
-									else {  /*---- STACK ---*/
+             break;
+          }
 
-											fprintf(text,"ERROR ASSIGN[MEMORY-STACK]");
-									}
+         break;
+         case CONSTANT:
+          fprintf(text,"ERROR ASSIGN[CONSTANT-]");
+         break;
+         case REGISTER:
+          fprintf(text,"ERROR ASSIGN[REGISTER-]");
+         break;
+         case STACK:
+          fprintf(text,"ERROR ASSIGN[STACK-]");
+         break;
 
-							break;
-					 }
-
-				  break;
-				  case CONSTANT:
-					 fprintf(text,"ERROR ASSIGN[CONSTANT-]");
-				  break;
-				  case REGISTER:
-					 fprintf(text,"ERROR ASSIGN[REGISTER-]");
-				  break;
-				  case STACK:
-					 fprintf(text,"ERROR ASSIGN[STACK-]");
-				  break;
-
-	   }
+    }
 
 
 }
@@ -4379,8 +4783,10 @@ void ProcessFunctionCall(AstNode *p, int lev, int lvalue, int leftChild){
 
 	//Jump to method
 	fprintf(text,"invoke_static %s\n",p->SymbolNode->name);
-
-	 push_vs(sn);
+  if(lvalue){
+    fprintf(text,"pop\n");
+  }
+	push_vs(sn);
 
 
 }
@@ -4392,22 +4798,30 @@ void ProcessMethodCall(AstNode *p, int lev, int lvalue, int leftChild){
   sn = new_symbol("");
   sn->sclass= STACK;
 
-  //Code Generation for static method name
+  //Code Generation for method name
   CodeGeneration(p->pAstNode[0],lev+1,0,0);
   lhs = pop_vs();
 
-  sn->typos = lhs->typos;
-
   //Code Generation for actual parameters
   CodeGeneration(p->pAstNode[1],lev+1,0,0);
-  fprintf(text,"rload_ %d\n",p->SymbolNode->index);
 
-  char snum[6];
-  nitoa(p->SymbolNode->typos,snum);
+  if(p->SymbolNode->field == 0){
+      fprintf(text,"rload_ %d\n",p->SymbolNode->index);
+    }
+  else{
+      fprintf(text,"rload_ 1\n");
+      fprintf(text,"getfield %s\n",p->SymbolNode->ax_name);
+    }
+
 
   //Jump to method
-  fprintf(text,"invoke_virtual %s %s%s%s\n",p->SymbolNode->nameclass, lhs->name,snum,PARAMETERS_CALL);
+  fprintf(text,"invoke_virtual %s %s\n",p->SymbolNode->nameclass, p->SymbolNode->name);
+  sn->typos = p->SymbolNode->instance_method_type_call;
 
+  if(lvalue){
+    fprintf(text,"pop\n");
+
+  }
   strcpy(PARAMETERS_CALL,"");
 
   push_vs(sn);
@@ -4440,6 +4854,9 @@ void ProcessStaticMethodCall(AstNode *p, int lev, int lvalue, int leftChild){
 	//Jump to method
 	fprintf(text,"invoke_virtual %s %s%s%s\n",p->SymbolNode->name, lhs->name,snum,PARAMETERS_CALL);
 
+  if(lvalue){
+    fprintf(text,"pop\n");
+  }
   strcpy(PARAMETERS_CALL,"");
 
 	 push_vs(sn);
@@ -5382,24 +5799,24 @@ void ProcessDecl(AstNode *p,int lev,int lvalue,int leftChild){
 
 		case astInt:
 				//Variable Declaration
-				fprintf(text,"iconst 0\n");
+				fprintf(text,"v_iconst 0\n");
 		break;
 		case astReal:
 
-				fprintf(text,"dconst 0.0\n");
+				fprintf(text,"v_dconst 0.0\n");
 
 		break;
 		case astBool:
 				//Variable Declaration
-				fprintf(text,"iconst 0\n");
+				fprintf(text,"v_iconst 0\n");
 		break;
-    case astString:
+    case astStr:
 				//Variable Declaration
-				fprintf(text,"sconst \" \"\n");
+				fprintf(text,"v_sconst \"\"\n");
 		break;
     case astPointer:
 				//Variable Declaration
-				fprintf(text,"rconst Null\n");
+				fprintf(text,"v_rconst Null\n");
 		break;
 
 	}
@@ -5434,12 +5851,12 @@ void ProcessDeclAssign(AstNode *p,int lev,int lvalue,int leftChild){
 
 						case astInt:
 
-							 fprintf(text,"iconst %d\n",rhs->timi);
+							 fprintf(text,"v_iconst %d\n",rhs->timi);
 
 					    break;
 						case astReal:
 
-							 fprintf(text,"dconst %d\n", rhs->timi);
+							 fprintf(text,"v_dconst %d\n", rhs->timi);
 
 						break;
 						case astBool:
@@ -5458,12 +5875,12 @@ void ProcessDeclAssign(AstNode *p,int lev,int lvalue,int leftChild){
 
 							case astInt:
 
-								 fprintf(text,"iconst %d\n",(int) rhs->dtimi);
+								 fprintf(text,"v_iconst %d\n",(int) rhs->dtimi);
 
 							break;
 							case astReal:
 
-								 fprintf(text,"dconst %lf\n", rhs->dtimi);
+								 fprintf(text,"v_dconst %lf\n", rhs->dtimi);
 
 							break;
 							case astBool:
@@ -5493,7 +5910,7 @@ void ProcessDeclAssign(AstNode *p,int lev,int lvalue,int leftChild){
 						break;
 						case astBool:
 
-						     fprintf(text,"iconst %d\n",rhs->timi);
+						     fprintf(text,"v_iconst %d\n",rhs->timi);
 
 					    break;
 
@@ -5524,7 +5941,7 @@ void ProcessDeclAssign(AstNode *p,int lev,int lvalue,int leftChild){
 					  break;
             case astStr:
 
-						    fprintf(text,"sconst \"%s\"\n",rhs->stimi);
+						    fprintf(text,"v_sconst \"%s\"\n",rhs->stimi);
 
 					  break;
 
@@ -5760,17 +6177,17 @@ void ProcessVarsSeq(AstNode *p,int lev,int lvalue,int leftChild) {
 		case INT:
 
 				//Variable Declaration
-				fprintf(text,"iconst 0\n");
+				fprintf(text,"v_iconst 0\n");
 		break;
 		case REAL:
 
-				fprintf(text,"dconst 0.0\n");
+				fprintf(text,"v_dconst 0.0\n");
 
 		break;
 		case BOOL:
 
 				//Variable Declaration
-				fprintf(text,"iconst 0\n");
+				fprintf(text,"v_iconst 0\n");
 		break;
 
 
@@ -5809,12 +6226,12 @@ void ProcessVarAssign(AstNode *p,int lev){
 
 						case INT:
 
-							 fprintf(text,"iconst %d\n",rhs->timi);
+							 fprintf(text,"v_iconst %d\n",rhs->timi);
 
 					    break;
 						case REAL:
 
-							 fprintf(text,"dconst %d\n",rhs->timi);
+							 fprintf(text,"v_dconst %d\n",rhs->timi);
 
 						break;
 						case BOOL:
@@ -5833,12 +6250,12 @@ void ProcessVarAssign(AstNode *p,int lev){
 
 							case INT:
 
-								 fprintf(text,"iconst %d\n",(int) rhs->dtimi);
+								 fprintf(text,"v_iconst %d\n",(int) rhs->dtimi);
 
 							break;
 							case REAL:
 
-								 fprintf(text,"dconst %lf\n",rhs->dtimi);
+								 fprintf(text,"v_dconst %lf\n",rhs->dtimi);
 
 							break;
 							case BOOL:
@@ -5870,7 +6287,7 @@ void ProcessVarAssign(AstNode *p,int lev){
 						break;
 						case BOOL:
 
-							 fprintf(text,"iconst %d\n",rhs->timi);
+							 fprintf(text,"v_iconst %d\n",rhs->timi);
 
 					    break;
 
@@ -6017,16 +6434,49 @@ void  ProcessActuals(AstNode *p,int lev,int lvalue,int leftChild){
 		 switch(rhs->typos){
 
 			 case INT:
-				fprintf(text,"iload_ %d\n",rhs->index);
+           if(rhs->field == 0){
+               fprintf(text,"iload_ %d\n",rhs->index);
+             }
+           else{
+               fprintf(text,"rload_ 1\n");
+               fprintf(text,"getfield %s\n",rhs->name);
+             }
 			 break;
 			 case REAL:
-				fprintf(text,"dload_ %d\n",rhs->index);
+           if(rhs->field == 0){
+               fprintf(text,"dload_ %d\n",rhs->index);
+             }
+           else{
+               fprintf(text,"rload_ 1\n");
+               fprintf(text,"getfield %s\n",rhs->name);
+             }
 			 break;
 			 case BOOL:
-				fprintf(text,"iload_ %d\n",rhs->index);
+           if(rhs->field == 0){
+               fprintf(text,"iload_ %d\n",rhs->index);
+             }
+           else{
+               fprintf(text,"rload_ 1\n");
+               fprintf(text,"getfield %s\n",rhs->name);
+             }
 			 break;
        case STR:
-				fprintf(text,"sload_ %d\n",rhs->index);
+           if(rhs->field == 0){
+               fprintf(text,"sload_ %d\n",rhs->index);
+             }
+           else{
+               fprintf(text,"rload_ 1\n");
+               fprintf(text,"getfield %s\n",rhs->name);
+             }
+			 break;
+       default:
+           if(rhs->field == 0){
+               fprintf(text,"rload_ %d\n",rhs->index);
+             }
+           else{
+               fprintf(text,"rload_ 1\n");
+               fprintf(text,"getfield %s\n",rhs->name);
+             }
 			 break;
 
 		}
@@ -6076,45 +6526,57 @@ void  ProcessArgsSeq(AstNode *p,int lev,int lvalue,int leftChild){
 	rhs = pop_vs();
 
 
-	if(rhs->sclass == MEMORY){
+  if(rhs->sclass == MEMORY){
 
 		 switch(rhs->typos){
 
-
 			 case INT:
-				fprintf(text,"iload_ %d\n",rhs->index);
+           if(rhs->field == 0){
+               fprintf(text,"iload_ %d\n",rhs->index);
+             }
+           else{
+               fprintf(text,"rload_ 1\n");
+               fprintf(text,"getfield %s\n",rhs->name);
+             }
 			 break;
 			 case REAL:
-				fprintf(text,"dload_ %d\n",rhs->index);
+           if(rhs->field == 0){
+               fprintf(text,"dload_ %d\n",rhs->index);
+             }
+           else{
+               fprintf(text,"rload_ 1\n");
+               fprintf(text,"getfield %s\n",rhs->name);
+             }
 			 break;
 			 case BOOL:
-				fprintf(text,"iload_ %d\n",rhs->index);
+           if(rhs->field == 0){
+               fprintf(text,"iload_ %d\n",rhs->index);
+             }
+           else{
+               fprintf(text,"rload_ 1\n");
+               fprintf(text,"getfield %s\n",rhs->name);
+             }
 			 break;
        case STR:
-				fprintf(text,"sload_ %d\n",rhs->index);
+           if(rhs->field == 0){
+               fprintf(text,"sload_ %d\n",rhs->index);
+             }
+           else{
+               fprintf(text,"rload_ 1\n");
+               fprintf(text,"getfield %s\n",rhs->name);
+             }
 			 break;
+       default:
+           if(rhs->field == 0){
+               fprintf(text,"rload_ %d\n",rhs->index);
+             }
+           else{
+               fprintf(text,"rload_ 1\n");
+               fprintf(text,"getfield %s\n",rhs->name);
+             }
+			 break;
+
 		}
-
-
-
-	}
-  else if(rhs->sclass == STACK){
-
-		 switch(rhs->typos){
-
-
-			 case INT:
-				//fprintf(text,"push dword [%s]\n",rhs->pseudonym);
-			 break;
-			 case REAL:
-
-			 break;
-			 case BOOL:
-
-			 break;
-		}
-
-
 
 	}
 	else if (rhs->sclass == CONSTANT){
@@ -6138,7 +6600,6 @@ void  ProcessArgsSeq(AstNode *p,int lev,int lvalue,int leftChild){
 
 		}
 
-
 	}
 
 
@@ -6147,7 +6608,7 @@ void  ProcessArgsSeq(AstNode *p,int lev,int lvalue,int leftChild){
 
   char snum[6];
   nitoa(rhs->typos,snum);
-  strcpy(PARAMETERS_CALL,snum);
+  strcat(PARAMETERS_CALL,snum);
 
 }
 
@@ -6169,19 +6630,54 @@ void ProcessReturnStmt(AstNode *p,int lev,int lvalue,int leftChild){
 
 			case INT:
 				//Push
-				fprintf(text,"iload_ %d\n",rhs->index);
+        if(rhs->field == 0){
+            fprintf(text,"iload_ %d\n",rhs->index);
+          }
+        else{
+            fprintf(text,"rload_ 1\n");
+            fprintf(text,"getfield %s\n",rhs->name);
+          }
+
 			break;
 			case REAL:
 				//Push
-				fprintf(text,"dload_ %d\n",rhs->index);
+        if(rhs->field == 0){
+            fprintf(text,"rload_ %d\n",rhs->index);
+          }
+        else{
+            fprintf(text,"rload_ 1\n");
+            fprintf(text,"getfield %s\n",rhs->name);
+          }
 			break;
 			case BOOL:
 				//Push
-				fprintf(text,"iload_ %d\n",rhs->index);
+        if(rhs->field == 0){
+            fprintf(text,"iload_ %d\n",rhs->index);
+          }
+        else{
+            fprintf(text,"rload_ 1\n");
+            fprintf(text,"getfield %s\n",rhs->name);
+          }
 			break;
       case STR:
 				//Push
-				fprintf(text,"sload_ %d\n",rhs->index);
+        if(rhs->field == 0){
+            fprintf(text,"sload_ %d\n",rhs->index);
+          }
+        else{
+            fprintf(text,"rload_ 1\n");
+            fprintf(text,"getfield %s\n",rhs->name);
+          }
+			break;
+      default:
+				//Push
+        if(rhs->field == 0){
+            fprintf(text,"rload_ %d\n",rhs->index);
+          }
+        else{
+            fprintf(text,"rload_ 1\n");
+            fprintf(text,"getfield %s\n",rhs->name);
+          }
 			break;
 
 		}
@@ -6236,12 +6732,12 @@ void ProcessReturnStmt(AstNode *p,int lev,int lvalue,int leftChild){
       case STR:
 
 				//Push
-				fprintf(text,"sconst \"%d\"\n",rhs->stimi);
+				fprintf(text,"sconst \"%s\"\n",rhs->stimi);
 				//fprintf(text,"fild dword [INT_%d]\n",NUM_OF_INT_CONST++);
 
 			break;
       default:
-        fprintf(text,"rload 1\n");
+        fprintf(text,"rload_ 1\n");
       break;
 		}
 
@@ -6330,26 +6826,60 @@ void ProcessExprInline(AstNode *p,int lev,int lvalue,int leftChild){
 
        			case BOOL:
 
-       					fprintf(text,"iload_ %d\n",rhs->index);
-                 fprintf(text,"i2s\n");
+
+                if(rhs->field == 0){
+
+                    fprintf(text,"iload_ %d\n",rhs->index);
+                  }
+                else{
+                    fprintf(text,"rload_ 1\n");
+                    fprintf(text,"getfield %s\n",rhs->name);
+                  }
+
+                fprintf(text,"i2s\n");
        					fprintf(text,"print\n");
 
        			break;
 
        			case INT:
-                 fprintf(text,"iload_ %d\n",rhs->index);
+
+                if(rhs->field == 0){
+
+                    fprintf(text,"iload_ %d\n",rhs->index);
+                  }
+                else{
+                    fprintf(text,"rload_ 1\n");
+                    fprintf(text,"getfield %s\n",rhs->name);
+                  }
+
                  fprintf(text,"i2s\n");
                  fprintf(text,"print\n");
        			break;
        			case REAL:
 
-                 fprintf(text,"dload_ %d\n",rhs->index);
+                if(rhs->field == 0){
+
+                    fprintf(text,"dload_ %d\n",rhs->index);
+                  }
+                else{
+                    fprintf(text,"rload_ 1\n");
+                    fprintf(text,"getfield %s\n",rhs->name);
+                  }
+
                  fprintf(text,"d2s\n");
                  fprintf(text,"print\n");
        			break;
              case STR:
 
-                 fprintf(text,"sload_ %d\n",rhs->index);
+               if(rhs->field == 0){
+
+                   fprintf(text,"sload_ %d\n",rhs->index);
+                 }
+               else{
+                   fprintf(text,"rload_ 1\n");
+                   fprintf(text,"getfield %s\n",rhs->name);
+                 }
+
                  fprintf(text,"print\n");
        			break;
 
@@ -6444,31 +6974,64 @@ void ProcessSingleExprInline(AstNode *p,int lev,int lvalue,int leftChild){
 
            case BOOL:
 
-               fprintf(text,"iload_ %d\n",rhs->index);
-                fprintf(text,"i2s\n");
+
+               if(rhs->field == 0){
+
+                   fprintf(text,"iload_ %d\n",rhs->index);
+                 }
+               else{
+                   fprintf(text,"rload_ 1\n");
+                   fprintf(text,"getfield %s\n",rhs->name);
+                 }
+
+               fprintf(text,"i2s\n");
                fprintf(text,"print\n");
 
            break;
 
            case INT:
-                fprintf(text,"iload_ %d\n",rhs->index);
+
+               if(rhs->field == 0){
+
+                   fprintf(text,"iload_ %d\n",rhs->index);
+                 }
+               else{
+                   fprintf(text,"rload_ 1\n");
+                   fprintf(text,"getfield %s\n",rhs->name);
+                 }
+
                 fprintf(text,"i2s\n");
                 fprintf(text,"print\n");
            break;
            case REAL:
 
-                fprintf(text,"dload_ %d\n",rhs->index);
+               if(rhs->field == 0){
+
+                   fprintf(text,"dload_ %d\n",rhs->index);
+                 }
+               else{
+                   fprintf(text,"rload_ 1\n");
+                   fprintf(text,"getfield %s\n",rhs->name);
+                 }
+
                 fprintf(text,"d2s\n");
                 fprintf(text,"print\n");
            break;
             case STR:
 
-                fprintf(text,"sload_ %d\n",rhs->index);
+              if(rhs->field == 0){
+
+                  fprintf(text,"sload_ %d\n",rhs->index);
+                }
+              else{
+                  fprintf(text,"rload_ 1\n");
+                  fprintf(text,"getfield %s\n",rhs->name);
+                }
+
                 fprintf(text,"print\n");
            break;
 
          }
-
 
  }
   else if(rhs->sclass == STACK){
@@ -6591,15 +7154,33 @@ void ProcessReadStmt(AstNode *p,int lev,int lvalue,int leftChild){
 
 			case INT:
           fprintf(text,"s2i\n");
-					fprintf(text,"istore_ %d\n",rhs->index);
+          if(rhs->field == 0){
+              fprintf(text,"istore_ %d\n",rhs->index);
+            }
+          else{
+              fprintf(text,"rload_ 1\n");
+              fprintf(text,"putfield %s\n",rhs->name);
+            }
 			break;
 			case REAL:
           fprintf(text,"s2d\n");
-          fprintf(text,"dstore_ %d\n",rhs->index);
+          if(rhs->field == 0){
+              fprintf(text,"dstore_ %d\n",rhs->index);
+            }
+          else{
+              fprintf(text,"rload_ 1\n");
+              fprintf(text,"putfield %s\n",rhs->name);
+            }
 
 			break;
       case STR:
-          fprintf(text,"sstore_ %d\n",rhs->index);
+          if(rhs->field == 0){
+              fprintf(text,"sstore_ %d\n",rhs->index);
+            }
+          else{
+              fprintf(text,"rload_ 1\n");
+              fprintf(text,"putfield %s\n",rhs->name);
+            }
 
 			break;
 
@@ -6790,6 +7371,9 @@ void CodeGeneration(AstNode *p, int lev, int lvalue, int leftChild)
 		     case astTimesStmt:
              ProcessTimesStmt(p,lev,lvalue,leftChild);
          break;
+         case astForStmt:
+             ProcessForStmt(p,lev,lvalue,leftChild);
+         break;
          case astBreakStmt:
              ProcessBreakStmt();
          break;
@@ -6926,16 +7510,16 @@ void CodeGeneration(AstNode *p, int lev, int lvalue, int leftChild)
                  ProcessTrue(p);
              break;
     		 case astIncreaseAfter:
-    			 ProcessIncreaseAfter(p,lev,leftChild);
+    			 ProcessIncreaseAfter(p,lev,lvalue,leftChild);
     		 break;
     		 case astIncreaseBefore:
-    			 ProcessIncreaseBefore(p,lev,leftChild);
+    			 ProcessIncreaseBefore(p,lev,lvalue,leftChild);
     		 break;
     		 case astDecreaseAfter:
-    			 ProcessDecreaseAfter(p,lev,leftChild);
+    			 ProcessDecreaseAfter(p,lev,lvalue,leftChild);
     		 break;
     		 case astDecreaseBefore:
-    			 ProcessDecreaseBefore(p,lev,leftChild);
+    			 ProcessDecreaseBefore(p,lev,lvalue,leftChild);
     		 break;
     		 case astActualsEmpty:
                  //ProcessActualsEmpty(p,lev,lvalue,leftChild);
@@ -6982,8 +7566,6 @@ void BeforeCodeGeneration(){
 	fprintf(text,"    section .text\n\n");
 
 */
- fprintf(data,"public class %s.Object extends NULL:\n",filename);
- fprintf(data,"endclass\n",filename);
 
 }
 
@@ -7047,7 +7629,7 @@ void main(int argc, char **argv)
    int wrong,i;
 
    Init_Hash_Table();
-   Init_Array_Hash_Table();
+   //Init_Array_Hash_Table();
    Init_while_stack();
 
    yyin = fopen(argv[1], "r");

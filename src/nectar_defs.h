@@ -1,6 +1,6 @@
 #define SYM_TABLE_SIZE 41
 #define NAME_MAX  32
-#define MAX_SYM_TABLES 20
+#define MAX_SYM_TABLES 31
 
 #define METHOD  		2
 #define CONSTANT        3
@@ -16,7 +16,10 @@
 #define ARRAY          14
 #define PRIVATE_ACC    15
 #define PUBLIC_ACC     16
-#define ABSTRACT_ACC     17
+#define ABSTRACT_MOD     17
+#define FINAL_MOD     18
+#define SHARED_MOD  19
+
 #define astEmptyProgram     399
 #define astProgram          400
 #define astMethSeq		      401
@@ -133,6 +136,15 @@
 #define astSelf 520
 #define astArrayIndex 521
 #define astForStmt 522
+#define astElements 523
+#define astElementSeq 524
+#define astEmptyElementSeq 525
+#define astOtherElementSeq 526
+#define astEmptyOtherElementSeq 527
+#define astForStmt 528
+#define astFormalsDots 529
+#define astFinalClassMod 530
+#define astSharedMethodMod 531
 /* ----------------------------------------------------------- */
 /* ----- THE STRUCTURE FOR THE ABSTRACT SYNTAX TREE NODES ---- */
 /* ----------------------------------------------------------- */
@@ -153,6 +165,8 @@ typedef struct AstNode_tag {
 typedef struct symbol_tag {
    int accessor;
    unsigned char name[NAME_MAX+1];  /* -- Variable name .------------------ */
+   unsigned char ax_name[NAME_MAX+1];  /* -- Variable name .------------------ */
+   unsigned char base_class_name[NAME_MAX+1];
    unsigned char nameclass[NAME_MAX+1];  /* -- Variable class's name .------------------ */
    int typos;                       /* -- INT REAL BOOL---------------------------- */
    int sclass;			     /* -- REGISTER, CONSTANT, MEMORY,STACK ----- */
@@ -161,9 +175,13 @@ typedef struct symbol_tag {
    int stype;					/* -- LOGICEXPR , ARITHEXPR */
    int lvalue;                      /* -- TRUE or FALSE .------------------ */
    int arg;
+   int field;
    int has_timi;
    int index;
+   int modifier;
    dcl* dcl_ptr;
+   int iterable;
+   int instance_method_type_call;
    unsigned char pseudonym[NAME_MAX+1];
    unsigned char stimi[NAME_MAX+1];
    struct symbol_tag *NextSymbol;
@@ -207,6 +225,7 @@ void add_symbols_to_table(symbol *symbp, int gl);
 symbol *findsymb(char *onoma, int gl);
 void addsymb(symbol *symbp, int gl);
 int mkkey(char *s);
+int startswith(const char *pre, const char *str);
 int isNumeric (const char * s);
 void copy_attributes(symbol *dst, symbol *src);
 void Init_while_stack();
@@ -220,7 +239,6 @@ void push_vs(symbol *p);
 symbol *pop_rt(void);
 void push_rt(symbol *p);
 void push_wh(symbol *p);
-void Init_Array_Hash_Table(void);
 void Init_Hash_Table(void);
 int yylex();
 int yyparse();
