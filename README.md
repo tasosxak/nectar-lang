@@ -15,26 +15,31 @@ files on a wide variety of different platforms (Windows,Linux,MacOS etc).
 # Installation
 
 * **Linux** :
-  > git clone  https://github.com/tasosxak/nectar-lang.git
+  > $ git clone  https://github.com/tasosxak/nectar-lang.git
   
-  > cd nectar-lang
+  > $ cd nectar-lang
   
-  > sudo ./init.sh
+  > $ sudo ./init.sh
   
   
   (The downloaded file has already the executable files so it is not necessary to run the last command.)
- 
+# Version
+Υou can check the version of the compiler you are using by typing:
+
+> $ nectar version
+
+
 # Create new project
 Writing the below command you can create a new project:
 
-> nectar create nameofproject
+> $ nectar create name_of_project
 
 The above command creates the below project tree:
 ```
-nameofproject
+name_of_project
     |
     |__ src
-          |__ nameofproject.nr
+          |__ name_of_project.nec
     |
     |__ exec
 ```
@@ -43,25 +48,25 @@ nameofproject
 * exec: This folder includes the executable file (.cex) of project.
 
 
-If you open the `nameofproject.nr` file in `src` folder you will see the below snippet of code:
+If you open the `name_of_project.nec` file in `src` folder you will see the below snippet of code:
 
-```swift
+```coffeescript
 func main()->int {
-  println "Hello world!"
-  return 0
+  say "Hello world!";
+  return 0;
 }
 ```
 # Build your project
 After project creation let's see how to build it. Writing the below command you can build your project:
-> nectar build nameofproject
+> $ nectar build name_of_project
 
-The above command initially calls the prenectar program to unite all the nectar files of your project and saves the result in the `final.nrf` file. After this, the nectar compiler is called, which it produces the bytecode in `nameofproject.cex`. The `nameofproject.cex` is stored in `exec` folder.
+The above command initially calls the prenectar program to unite all the nectar files of your project and saves the result in the `name_of_project.nectar` file. After this, the nectar compiler is called, which it produces the bytecode in `name_of_project.cex`. The `name_of_project.cex` is stored in `exec` folder.
 
 # Run your project
 After project build let's see how to run it. Writing the below command you can run your project:
-> nectar run nameofproject
+> $ nectar run name_of_project
 
-The above command calls the colibri virtual machine with `nameofproject.cex` as input. Colibri-VM executes the bytecode.
+The above command calls the colibri virtual machine with `name_of_project.cex` as input. Colibri-VM executes the bytecode.
 
 # Keywords
 The first step of compilation named "Lexical Analysis" and splits the input file to tokens.
@@ -70,8 +75,8 @@ In this phase, the compiler recognizes the reserved keywords which are:
 
 ```
 false    true    int     return     if 
-else     while   break   print      read
-println  times   use     unless     not
+else     while   break   say        read
+try      times   use     unless     not
 and      or      real    puts       bool
 func     class   pub     abstract   var
 ```
@@ -86,160 +91,232 @@ use math
 With this command you can import other nectar files. You should write use statements at the top of your program.
 * **Class Declaration**:
 
-```swift
-pub class Person{
+```coffeescript
+pub class Person {
 
-  @name:string
-  @age:int
-  
-  pub new(string name,int age) -> int {
-      self.name = name
-      self.age = age
-      
-      return 0
-  }
-  
+
+	@name:str;
+	@surname:str;
+	@height:real;
+	@age:int;
+
+
+	pub new(name:str,surname:str,height:real,age:int)->Person {
+
+		@name = name;
+		@surname = surname;
+		@height = height;
+		@age = age;
+
+		return self;
+	}
+
+	pub name()->str {
+		return @name;
+	}
+
+	pub age()->int {
+		return @age;
+	}
+
+	pub height()->real {
+		return @height;
+	}
+
+
 }
 
-func main()->int {
-  var alice:Person = Person.new("alice",18)
-  15 times println "hello world!"
-  
-  return 0
+func main()-> int {
+
+	var me:Person;
+	
+	me = Person.new("Tasos","Temperekidis",1.73,21);
+	say "My name is " , me.name() , " and I am " , me.age(), " years old!";
+
+	return 0;
 }
 ```
 * **Fields**:
 ```ruby
-@age:int
+@age:int;
 ```
 With the above way you can declare a field in class. Fields are strictly private.
 
 * **Methods**:
-```rust
-  pub new(string name,int age) -> int {
-      self.name = name
-      self.age = age
-      
-      return 0
-  }
+```coffeescript
+  pub new(name:str,surname:str,height:real,age:int)->Person {
+
+	@name = name;
+	@surname = surname;
+	@height = height;
+	@age = age;
+
+	return self;
+ }
 ```
 Methods are by default private. You can make them public by adding the keyword `pub` to the beginning of declaration.
 
+* **Shared Methods**:
+```coffeescript
+class Console {
+  $shared
+  pub write(msg:str)->str {
+    say msg;
+    return msg;
+   }
+}
+ 
+```
+Shared methods are functions which you can call them without creating a new object. For example:
+
+```coffeescript
+Console.write("Hello world!");
+```
+
 * **Functions**:
-```swift
-func main()->int {
-  var alice:Person = Person.new("alice",18)
-  15 times println "hello world!"
-  
-  return 0
+```coffeescript
+func main()-> int {
+
+	var me:Person;
+
+	me = Person.new("Tasos","Temperekidis",1.73,21);
+	say "My name is " , me.name() , " and I am " , me.age(), " years old!";
+
+	return 0;
 }
 ```
 With the above way you can declare a function in your program.Instead of method declaration, the declaration of function starts with the keyword `func`.
 
 * **Variable Declaration**:
 ```javascript
- var x:int
+ var x:int;
 ```
 You can declare a variable in methods and functions.
 
 * **Variable Definition & Declaration**:
 ```javascript
- var x:int = 12
+ var x:int = 12;
 ```
 You can declare & define a variable in methods and functions.
 
 * **Assignment**:
 ```javascript
-   x = 53
+   x = 53;
 ```
 * **Math & Assignment**:
-```javascript
-   x += 53 // x = x + 53
-   y -= x  // y = y - x
-   z *= y+5  // z = z * ( y+ 5)
-   x /= 3  // x = x / 3
-   x++  // x = x + 1
-   ++x  // x = x + 1
-   y** //  y = y*y
-   **y //  y = y*y
-   z-- // z = z-1
-   --z // z = z-1
+```coffeescript
+   x += 53; # x = x + 53
+   y -= x;  # y = y - x
+   z *= y+5;  # z = z * ( y+ 5)
+   x /= 3;  # x = x / 3
+   x++;  # x = x + 1
+   ++x;  # x = x + 1
+   y**; #  y = y*y
+   **y; #  y = y*y
+   z--; # z = z-1
+   --z; # z = z-1
 ```
-* **Swapping**:
-```javascript
-   var x:int = 5
-   var y:int = 6
-   x,y = y,x   // x=6 and y=5
-```
-* **Print with line**:
-```swift
-   println "hello world!"
-```
-Prints out the message "hello world" and new line.
+* **Division & Integer Division**:
 
-* **Print without line**:
+Nectar has two operators for division.
+
+**Division**:
 ```python
-   print "hello world!"
+   say 5 / 2;  # 2.5
 ```
-Prints out the message "hello world".
 
-* **Puts**:
-```ruby
-   puts "hello world!"
+**Integer Division**:
+```python
+   say 5 // 2; #2
 ```
-Prints out the message "hello world".
+
+
+* **Swapping**:
+```coffeescript
+   var x:int = 5;
+   var y:int = 6;
+   x,y = y,x;   # x=6 and y=5
+```
+* **Print with new line**:
+```coffeescript
+   say "hello world!";
+```
+Prints out the message "hello world!" and new line.
+
+* **Print without new line**:
+```coffeescript
+   say "hello ", "world ", "!";
+```
+Prints out the message "hello world !".
 
 * **Read**:
-```swift
-   read "Give me a number: ",x
+```coffeescript
+   read "Give me a number: ",x;
 ```
 Prints out the message "Give me a number" and waits for input. When the user gives an input and press the enter button,this
 command assigns the input to the variable `x`. 
 
 * **if statement**:
-```swift
+```coffeescript
    if( age < 18 ) {
-      puts "you are kid!"
+      say "you are kid!";
    }
 ```
 * **if statement with else**:
-```ruby
+```coffeescript
    if( age < 18 ) {
-      puts "you are kid!"
+      say "you are kid!";
    }
    else {
-      puts "you are man!"
+      say "you are man!";
    }
 ```
 * **While loop**:
-```swift
+```coffeescript
    while(counter < 15){
-    read "Give me a number", x
-    println x
-    counter++
+    read "Give me a number", x;
+    say x;
+    counter++;
    }
 ```
 * **Times loop**:
-```ruby
-   15 times puts "Hello world"
+```coffeescript
+   15 times say "Hello world";
 ```
-
+* **For each iteration**:
+```coffeescript
+   for word in "hello" {
+   	say word;
+   }
+```
 # Single Statements
 Single Statements are statements which you can write in one line, fastly.
 The command must be assignment, print,read, expression.
 
 * **command if expression**:
-```python
-   print "Hello world" if x>5
+```applescript
+   say "Hello world" if x>5;
 ```
 This command will execute the code before `if` , if the expression after `if` is true.
 
 
 * **command unless expression**:
 ```ruby
-   y++ unless x>5
+   y++ unless x>5;
 ```
 This command will execute the code before `unless` , if the expression after `unless` is false.
+# Build-in types
+
+* **String**:
+
+**Adding strings**:
+```applescript
+   say "Hello " + "World " + "!!!"; # output: Hello World !!!
+```
+**String multiplication**:
+ ```applescript
+    say 3 * "Hello!";  # output: Hello!Hello!Hello!
+ ```
 
 # What is Colibri?
 
@@ -251,3 +328,104 @@ Colibri is a virtual machine that reads line per line the bytecode and executes 
 * **Load**: In this phase, Colibri-VM pushes the bytecode into the stack.
 * **Compilation**: In this phase, Colibri-VM compiles the bytecode (creates the classes, the labels,the variables etc)
 * **Execution**: In this phase, Colibri-VM executes the bytecode, starting from main function.
+
+# The big test...
+```coffeescript
+
+#string addition
+func test_one(left:str,right:str)->int{
+	
+	say "Test1: String Addition";
+ 	say left + " " + right;
+	
+	return 0;
+	
+}
+
+#string multiplication
+func test_two(x:int,y:int)->int{
+	
+	say "Test2: String Multiplication";
+ 	say 150 * "Gello!";
+ 	say x * "Nectar ";
+ 	say ( (x + y) // 2) * "Colibri ";
+	
+	return 0;
+	
+}
+
+#Print many types inline
+func test_three(tomatoes:int, potatoes:int, onions:int)->int{
+	
+	 say "Test3: Print many types inline";
+     say "I have ", tomatoes ," tomatoes, ", potatoes//2 , " potatoes and ", onions + 52 , " onions";
+	
+	return 0;
+	
+}
+
+
+func test_four(x:int, y:int)->int {
+	say "Test4: Division";
+ 	say  "x/y = " , x/y;
+	
+	return 0;
+}
+
+func test_five(x:int, y:int)->int {
+	
+	say "Test5: Integer Division";
+ 	say "x//y = " , x//y;
+	
+	return 0;
+}
+	
+func raw_input(message:str)->str{
+	var input:str;
+	read message,input;
+	
+	return input;
+}
+	
+func input(message:str)->int{
+	var input:int;
+	read message,input;
+	
+	return input;
+}
+	
+func test_six(name:str,surname:str,age:int)->int {
+	
+	name = raw_input("What is your name? : ");
+ 	surname = raw_input("Ok " + name + ", what is your surname? : ");
+ 	age = input("How old are you? : ");
+ 	say "So, your name is " , name , " your surname is " , surname, " and you are ", age , " years old!";
+	
+	return 0;
+ 
+}
+
+
+func main() -> int { 
+	
+ var x:int = 3;
+ var y:int = 2;
+ var age:int;
+ var name:str = "Tasos";
+ var surname:str = "Temperekidis";
+	
+ test_one(name,surname);
+ test_two(x,y);
+ test_three(25,53,1);
+ test_four(x,y);
+ test_five(x,y);
+ test_six(name,surname,age);
+ 
+	  
+ return 0;
+ 
+}
+
+
+
+```
