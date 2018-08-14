@@ -1,7 +1,12 @@
 <p align="center">
   <img src="https://github.com/tasosxak/nectar-lang/blob/master/nectar.jpg/?style=centerme">
 </p>
-<table><tr><td><img src = "https://img.shields.io/badge/build-pass-green.png?longCache=true&style=flat-square"/></td><td><img src = "https://img.shields.io/badge/version-02-blue.png?longCache=true&style=flat-square"/></td><td><img src = "https://img.shields.io/badge/mode-test-red.png?longCache=true&style=flat-square"/></td></tr></table>
+
+<hr>
+<center>
+	<table><tr><td><img src = "https://img.shields.io/badge/build-pass-green.png?longCache=true&style=flat-square"/></td><td><img src = "https://img.shields.io/badge/version-02-blue.png?longCache=true&style=flat-square"/></td><td><img src = "https://img.shields.io/badge/mode-test-red.png?longCache=true&style=flat-square"/></td><td><img src = "https://img.shields.io/badge/platforms-Linux--Windows-yellow.png?longCache=true&style=flat-square"/></td></tr></table>
+	</center>
+
 Nectar is a new general-purposed programming language. It comprises a combination of both high-level and low-level language features. Nectar supports object-orentied and procedural programming.
 
 Nectar's futures include:
