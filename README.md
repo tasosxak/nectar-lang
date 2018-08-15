@@ -340,4 +340,4 @@ Colibri is a virtual machine that reads line per line the bytecode and executes 
 * **Execution**: In this phase, Colibri-VM executes the bytecode, starting from main function.
 
 # Contributing
-# License
+You may contribute in several ways like fixing bugs, improving documentation and examples or translating any document here to your language. Find more information in CONTRIBUTING.md. :hibiscus:
