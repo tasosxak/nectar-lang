@@ -13,7 +13,7 @@ So nice you wanna contribute to this repository. Thank you. You may contribute i
 
 # Running Tests
 
-Download and run on your computers the unit tests in `test` folder, or create yours.
+Download and run on your computer the unit tests in `test` folder, or create yours.
 
 # Reporting a bug
 
