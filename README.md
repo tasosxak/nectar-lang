@@ -23,7 +23,7 @@ Nectar's futures include:
 | **Learnability** | Nectar has clean and easy syntax that allows new developers to learn quickly and easy. |
 | **Readability** | Nectar has similar syntax to that of many programming languages (such a Javascript,Ruby, Swift,C++,Java). |
 
-# Installation
+# <i class="icon-file"></i> Installation
 
 * **Linux** :
   > $ git clone  https://github.com/tasosxak/nectar-lang.git
@@ -83,33 +83,19 @@ The above command calls the colibri virtual machine with `name_of_project.cex` a
 The first step of compilation named "Lexical Analysis" and splits the input file to tokens.
 In this phase, the compiler recognizes the reserved keywords which are:
 
-{|
-|false
-|true
-|int
-|return
-|if
-|-
-|else
-|while
-|break
-|say
-|read
-|-
-|try
-|times
-|use
-|unless
-|not
-|}
+ Orange | Apple 
+ Bread  | Pie 
+ Butter | Ice cream 
 
-```
-   true    int     return     if 
-else     while   break   say        read
+
+
+{| false  || true  ||  int  ||   return  ||   if |-
+| else  ||   while ||   break ||  say   ||     read |-
+|}
 try      times   use     unless     not
 and      or      real    puts       bool
 func     class   pub     abstract   var
-```
+
 # Syntax
 Let's see some commands.
 In nectar you can declare functions, classes and variables.
