@@ -1,0 +1,66 @@
+use std.lang.nectar
+
+#string addition
+func test_one(left:str,right:str)->int{
+	say "Test1: String Addition";
+	say left + " " + right;
+	return 0;
+}
+#string multiplication
+func test_two(x:int,y:int)->int{
+	say "Test2: String Multiplication";
+	say 150 * "Gello!";
+	say x * "Nectar ";
+	say ( (x + y) // 2) * "Colibri ";
+	return 0;
+}
+
+#Print many types inline
+func test_three(tomatoes:int, potatoes:int, onions:int)->int{
+	say "Test3: Print many types inline";
+	say "I have ", tomatoes ," tomatoes, ", potatoes//2 , " potatoes and ", onions + 52 , " onions";
+	return 0;
+}
+
+func test_four(x:int, y:int)->int {
+	say "Test4: Division";
+	say  "x/y = " , x/y;
+	return 0;
+}
+
+func test_five(x:int, y:int)->int {
+say "Test5: Integer Division";
+say "x//y = " , x//y;return 0;
+}
+
+func raw_input(message:str)->str{
+	var input:str;
+	read message,input;
+	return input;
+}
+
+func input(message:str)->int{
+	var input:int;
+	read message,input;
+	return input;
+}
+
+func test_six()->int {
+	var name:str = raw_input("What is your name? : ");
+	var surname:str = raw_input("Ok " + name + ", what is your surname? : ");
+	var age:int = input("How old are you? : ");
+	say "So, your name is " , name , " your surname is " , surname, " and you are ", age , " years old!";
+	return 0;
+}
+
+func main() -> int {
+	var x:int = 3;
+	var y:int = 2;
+	test_one(name,surname);
+	test_two(x,y);
+	test_three(25,53,1);
+	test_four(x,y);
+	test_five(x,y);
+	test_six(name,surname,age);
+	return 0;
+}
