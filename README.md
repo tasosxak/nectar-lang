@@ -14,6 +14,7 @@
 <hr>
 <i>Nectar is a new general-purposed programming language. It comprises a combination of both high-level and low-level language features. Nectar supports object-orentied and procedural programming.</i>
 
+
 Nectar's futures include:
 
 | Feature | Description |
@@ -23,7 +24,7 @@ Nectar's futures include:
 | **Learnability** | Nectar has clean and easy syntax that allows new developers to learn quickly and easy. |
 | **Readability** | Nectar has similar syntax to that of many programming languages (such a Javascript,Ruby, Swift,C++,Java). |
 
-# <i class="icon-file"></i> Installation
+# Installation
 
 * **Linux** :
   > $ git clone  https://github.com/tasosxak/nectar-lang.git
@@ -83,15 +84,8 @@ The above command calls the colibri virtual machine with `name_of_project.cex` a
 The first step of compilation named "Lexical Analysis" and splits the input file to tokens.
 In this phase, the compiler recognizes the reserved keywords which are:
 
- Orange | Apple 
- Bread  | Pie 
- Butter | Ice cream 
-
-
-
-{| false  || true  ||  int  ||   return  ||   if |-
-| else  ||   while ||   break ||  say   ||     read |-
-|}
+false    true    int     return     if
+else     while   break   say        read 
 try      times   use     unless     not
 and      or      real    puts       bool
 func     class   pub     abstract   var
@@ -345,103 +339,5 @@ Colibri is a virtual machine that reads line per line the bytecode and executes 
 * **Compilation**: In this phase, Colibri-VM compiles the bytecode (creates the classes, the labels,the variables etc)
 * **Execution**: In this phase, Colibri-VM executes the bytecode, starting from main function.
 
-# The big test...
-```coffeescript
-
-#string addition
-func test_one(left:str,right:str)->int{
-	
-	say "Test1: String Addition";
- 	say left + " " + right;
-	
-	return 0;
-	
-}
-
-#string multiplication
-func test_two(x:int,y:int)->int{
-	
-	say "Test2: String Multiplication";
- 	say 150 * "Gello!";
- 	say x * "Nectar ";
- 	say ( (x + y) // 2) * "Colibri ";
-	
-	return 0;
-	
-}
-
-#Print many types inline
-func test_three(tomatoes:int, potatoes:int, onions:int)->int{
-	
-	 say "Test3: Print many types inline";
-     say "I have ", tomatoes ," tomatoes, ", potatoes//2 , " potatoes and ", onions + 52 , " onions";
-	
-	return 0;
-	
-}
-
-
-func test_four(x:int, y:int)->int {
-	say "Test4: Division";
- 	say  "x/y = " , x/y;
-	
-	return 0;
-}
-
-func test_five(x:int, y:int)->int {
-	
-	say "Test5: Integer Division";
- 	say "x//y = " , x//y;
-	
-	return 0;
-}
-	
-func raw_input(message:str)->str{
-	var input:str;
-	read message,input;
-	
-	return input;
-}
-	
-func input(message:str)->int{
-	var input:int;
-	read message,input;
-	
-	return input;
-}
-	
-func test_six(name:str,surname:str,age:int)->int {
-	
-	name = raw_input("What is your name? : ");
- 	surname = raw_input("Ok " + name + ", what is your surname? : ");
- 	age = input("How old are you? : ");
- 	say "So, your name is " , name , " your surname is " , surname, " and you are ", age , " years old!";
-	
-	return 0;
- 
-}
-
-
-func main() -> int { 
-	
- var x:int = 3;
- var y:int = 2;
- var age:int;
- var name:str = "Tasos";
- var surname:str = "Temperekidis";
-	
- test_one(name,surname);
- test_two(x,y);
- test_three(25,53,1);
- test_four(x,y);
- test_five(x,y);
- test_six(name,surname,age);
- 
-	  
- return 0;
- 
-}
-
-
-
-```
+# Contributing
+# License
