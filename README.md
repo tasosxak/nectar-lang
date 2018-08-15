@@ -12,7 +12,7 @@
 </center>
 </div>
 <hr>
-Nectar is a new general-purposed programming language. It comprises a combination of both high-level and low-level language features. Nectar supports object-orentied and procedural programming.
+<i>Nectar is a new general-purposed programming language. It comprises a combination of both high-level and low-level language features. Nectar supports object-orentied and procedural programming.</i>
 
 Nectar's futures include:
 
@@ -83,9 +83,28 @@ The above command calls the colibri virtual machine with `name_of_project.cex` a
 The first step of compilation named "Lexical Analysis" and splits the input file to tokens.
 In this phase, the compiler recognizes the reserved keywords which are:
 
+{|
+|false
+|true
+|int
+|return
+|if
+|-
+|else
+|while
+|break
+|say
+|read
+|-
+|try
+|times
+|use
+|unless
+|not
+|}
 
 ```
-false    true    int     return     if 
+   true    int     return     if 
 else     while   break   say        read
 try      times   use     unless     not
 and      or      real    puts       bool
