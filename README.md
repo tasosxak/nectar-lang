@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://github.com/tasosxak/nectar-lang/blob/master/nectar.jpg/?style=centerme">
+  <img src="https://github.com/tasosxak/nectar-lang/blob/master/nectarnewlogo.png/?style=centerme">
 </p>
 
 <div align="center">	
