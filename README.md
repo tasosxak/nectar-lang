@@ -340,4 +340,4 @@ Colibri is a virtual machine that reads line per line the bytecode and executes 
 * **Execution**: In this phase, Colibri-VM executes the bytecode, starting from main function.
 
 # Contributing
-You may contribute in several ways like fixing bugs, improving documentation and examples or translating any document here to your language. Find more information in <a href="https://github.com/tasosxak/nectar-lang/edit/master/CONTRIBUTING.md">CONTRIBUTING.md</a>. :hibiscus:
+You may contribute in several ways like fixing bugs, improving documentation and examples or translating any document here to your language. Find more information in <a href="https://github.com/tasosxak/nectar-lang/blob/master/CONTRIBUTING.md">CONTRIBUTING.md</a>. :hibiscus:
